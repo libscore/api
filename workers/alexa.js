@@ -1,3 +1,5 @@
+// Download the Alexa top 1m sites and update our sites
+
 var async = require('async');
 var bookshelf = require('../db/bookshelf');
 var http = require('https');
