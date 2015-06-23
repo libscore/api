@@ -1,4 +1,5 @@
 var bookshelf = require('../db/bookshelf');
+var History = require('./history');
 var Site = require('./site');
 
 
@@ -12,6 +13,11 @@ var Library = bookshelf.Model.extend({
   type: enum ['library', 'script', 'server']
   */
   tableName: 'libraries',
+
+  history: function() {
+    return this.hasOne(History);
+  },
+
   sites: function() {
     return this.belongsToMany(Site);
   }

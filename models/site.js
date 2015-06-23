@@ -9,9 +9,11 @@ var Site = bookshelf.Model.extend({
   updated_at: timestamp
   */
   tableName: 'sites',
+
   sites: function() {
     return this.belongsToMany(Library);
   },
+
   updatedAt: function() {
     return this.updated_at;
   }
