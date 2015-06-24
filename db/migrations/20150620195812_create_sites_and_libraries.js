@@ -4,8 +4,7 @@ exports.up = function(knex, Promise) {
       table.increments('id').primary();
       table.text('name').notNullable();
       table.string('identifier').notNullable().unique();
-      table.string('website');
-      table.string('repository');
+      table.string('site');
       table.enu('type', ['library', 'script', 'server']);
     })
     .createTable('sites', function(table) {
@@ -15,9 +14,10 @@ exports.up = function(knex, Promise) {
       table.timestamp('updated_at').notNullable().defaultTo(knex.raw('now()'));
     })
     .createTable('libraries_sites', function(table) {
-      table.integer('library_id').references('libraries.id');
-      table.integer('site_id').references('sites.id');
+      table.integer('library_id').references('libraries.id').index();
+      table.integer('site_id').references('sites.id').index();
       table.timestamp('updated_at').notNullable().defaultTo(knex.raw('now()'));
+      table.unique(['library_id', 'site_id'])
     }); /*.then(function() {      // TODO when we Dockerize, we can add this
       return knex.schema.raw('create index search_idx on "libraries" using gist(name gist_trgm_ops)')
     });*/
