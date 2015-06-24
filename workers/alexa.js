@@ -69,7 +69,7 @@ function work(task, callback) {
       if (rows.length > 0 && rows[0].count > 0) {
         return bookshelf.knex('sites')
           .where({ domain: task.domain })
-          .update({ rank: task.rank, updated_at: new Date() });
+          .update({ rank: task.rank, updated_at: updatedAt });
       } else {
         return bookshelf.knex('sites')
           .insert({ domain: task.domain, rank: task.rank });
