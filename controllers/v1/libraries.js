@@ -17,8 +17,15 @@ function *badge(name, next) {
   this.redirect('http://img.shields.io/badge/libscore-' + count + '-brightgreen.svg?style=flat-square');
 };
 
-function *index(next) {
-  var libraries = yield bookshelf.knex.select('libraries.name', 'sub.count', 'libraries.type').from(
+function *index(type, next) {
+  if (type === 'libraries') {
+    type = 'library';
+  } else if (type === 'scripts') {
+    type = 'script';
+  } else {
+    return yield next;
+  }
+  var libraries = yield bookshelf.knex.select('libraries.name', 'sub.count').from(
     bookshelf.knex.raw(
       "(" +
       bookshelf.knex('histories')
@@ -27,7 +34,10 @@ function *index(next) {
         .orderBy('created_at', 'desc').toString() +
       ") as sub"
     )
-  ).innerJoin('libraries', 'libraries.id', '=', 'sub.library_id').orderBy('count', 'desc').limit(1000);
+  ).innerJoin('libraries', 'libraries.id', '=', 'sub.library_id')
+    .where({ type: type })
+    .orderBy('count', 'desc')
+    .limit(1000);
   var resource = this.request.protocol + '://' + this.request.host + '/libraries/';
   this.body = {
     results: libraries.map(function(library) {
@@ -63,8 +73,14 @@ function *search(query, next) {
   this.body = _.sortBy(results, 'count').reverse();
 };
 
-function *show(name, next) {
-  var type = 'library';
+function *show(type, name, next) {
+  if (type === 'libraries') {
+    type = 'library';
+  } else if (type === 'scripts') {
+    type = 'script';
+  } else {
+    return yield next;
+  }
   var resource = this.request.protocol + '://' + this.request.host + '/sites/';
   var library = yield Library.where({ name: name, type: type }).fetch({
     withRelated: {
