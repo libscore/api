@@ -1,3 +1,5 @@
+var _ = require('lodash');
+var bookshelf = require('../../db/bookshelf');
 var Library = require('../../models/library');
 
 
@@ -19,8 +21,24 @@ function *index(next) {
 };
 
 function *search(query, next) {
-  this.body = [];
-
+  var libraries = yield Library.where('name', 'LIKE', '%' + query + '%').fetchAll({
+    withRelated: {
+      'history': function(query) {
+        query
+          .select(bookshelf.knex.raw('distinct on (library_id) *'))
+          .orderBy('library_id')
+          .orderBy('created_at', 'desc');
+      }
+    }
+  })
+  var results = libraries.map(function(library) {
+    return {
+      name: library.get('name'),
+      count: library.related('history').get('count'),
+      type: library.get('type')
+    };
+  })
+  this.body = _.sortBy(results, 'count').reverse();
 };
 
 function *show(name, next) {
