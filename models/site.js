@@ -10,12 +10,17 @@ var Site = bookshelf.Model.extend({
   */
   tableName: 'sites',
 
-  sites: function() {
+  libraries: function() {
     return this.belongsToMany(Library);
-  },
+  }
+}, {
+  TOP_LIMIT: 5000,
 
-  updatedAt: function() {
-    return this.updated_at;
+  top: function() {
+    var limit = this.TOP_LIMIT;
+    return this.forge().query(function(q) {
+      q.orderBy('rank', 'ASC').limit(limit);
+    }).fetchAll();
   }
 });
 

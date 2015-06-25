@@ -11,10 +11,6 @@ var History = bookshelf.Model.extend({
   */
   tableName: 'histories',
 
-  createdAt: function() {
-    return this.created_at;
-  }
-
   library: function() {
     return this.belongsTo(Library);
   },
