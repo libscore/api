@@ -1,8 +1,17 @@
 var Library = require('../../models/library');
 
 
-function *badge(id, next) {
-  this.body = {};
+function *badge(name, next) {
+  var library = yield Library.where({ name: name, type: 'library' }).fetch({
+    withRelated: {
+      'history': function(query) {
+        query.orderBy('created_at', 'desc').limit(1);
+      }
+    }
+  });
+  this.status = 301;
+  var count = library.related('history').get('count');
+  this.redirect('http://img.shields.io/badge/libscore-' + count + '-brightgreen.svg?style=flat-square');
 };
 
 function *index(next) {
