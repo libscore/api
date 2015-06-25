@@ -14,6 +14,7 @@
     "csv-transform": "0.0.7",
     "knex": "^0.8.6",
     "koa": "^0.21.0",
+    "koa-cors": "0.0.16",
     "koa-logger": "^1.2.2",
     "koa-route": "^2.4.1",
     "lodash": "^3.9.3",

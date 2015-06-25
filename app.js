@@ -1,6 +1,7 @@
 'use strict';
 
 var koa = require('koa');
+var cors = require('koa-cors');
 var logger = require('koa-logger');
 var route = require('koa-route');
 var v1 = {
@@ -9,6 +10,7 @@ var v1 = {
 };
 
 var app = koa();
+app.use(cors());
 app.use(logger());
 
 

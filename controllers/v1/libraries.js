@@ -1,6 +1,7 @@
 var _ = require('lodash');
 var bookshelf = require('../../db/bookshelf');
 var Library = require('../../models/library');
+var History = require('../../models/history');
 
 
 function *badge(name, next) {
@@ -17,9 +18,26 @@ function *badge(name, next) {
 };
 
 function *index(next) {
-
+  var libraries = yield bookshelf.knex.select('libraries.name', 'sub.count', 'libraries.type').from(
+    bookshelf.knex.raw(
+      "(" +
+      bookshelf.knex('histories')
+        .select(bookshelf.knex.raw('distinct on (library_id) *'))
+        .orderBy('library_id')
+        .orderBy('created_at', 'desc').toString() +
+      ") as sub"
+    )
+  ).innerJoin('libraries', 'libraries.id', '=', 'sub.library_id').orderBy('count', 'desc').limit(1000);
+  var resource = this.request.protocol + '://' + this.request.host + '/libraries/';
   this.body = {
-    results: [],
+    results: libraries.map(function(library) {
+      return {
+        library: library.name,
+        count: [library.count],
+        resource: resource + library.name,
+        github: ""
+      }
+    }),
     meta: {}
   };
 };
