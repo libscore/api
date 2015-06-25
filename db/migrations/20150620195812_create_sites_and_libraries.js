@@ -19,9 +19,7 @@ exports.up = function(knex, Promise) {
       table.enu('platform', ['desktop', 'mobile', 'both']);
       table.timestamp('updated_at').notNullable().defaultTo(knex.raw('now()'));
       table.unique(['library_id', 'site_id']);
-    }); /*.then(function() {      // TODO when we Dockerize, we can add this
-      return knex.schema.raw('create index search_idx on "libraries" using gist(name gist_trgm_ops)')
-    });*/
+    });
 };
 
 exports.down = function(knex, Promise) {

@@ -53,7 +53,7 @@ function *index(type, next) {
 };
 
 function *search(query, next) {
-  var libraries = yield Library.where('name', 'LIKE', '%' + query + '%').fetchAll({
+  var libraries = yield Library.where('name', 'ILIKE', '%' + query + '%').fetchAll({
     withRelated: {
       'history': function(query) {
         query
