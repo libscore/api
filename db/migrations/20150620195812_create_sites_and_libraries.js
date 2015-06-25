@@ -10,7 +10,7 @@ exports.up = function(knex, Promise) {
     .createTable('sites', function(table) {
       table.increments('id').primary();
       table.string('domain').unique().notNullable();
-      table.integer('rank');
+      table.integer('rank').index();
       table.timestamp('updated_at').notNullable().defaultTo(knex.raw('now()'));
     })
     .createTable('libraries_sites', function(table) {

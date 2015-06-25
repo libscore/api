@@ -15,12 +15,10 @@ bookshelf.knex('libraries').select('id').then(function(rows) {
   });
   async.eachLimit(rows, os.cpus().length, function(row, callback) {
     bar.tick();
-    var select = bookshelf.knex('libraries_sites').select('site_id').where({ library_id: row.id }).toString();
     var count = bookshelf.knex('libraries_sites').count('*').where({ library_id: row.id }).toString();
     bookshelf.knex('histories').insert({
       library_id: row.id,
       count: bookshelf.knex.raw('COALESCE((' + count + '), 0)'),
-      sites: bookshelf.knex.raw('array(' + select + ')'),
       created_at: CREATED_AT
     }).then(callback.bind(callback, null), function(err) {
       console.error('Error inserting:', row, err);

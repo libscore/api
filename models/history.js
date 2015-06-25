@@ -6,7 +6,6 @@ var History = bookshelf.Model.extend({
   /*
   library_id: integer
   count: integer
-  sites: integer[]
   created_at: timestamp
   */
   tableName: 'histories',

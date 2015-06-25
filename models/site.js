@@ -18,8 +18,8 @@ var Site = bookshelf.Model.extend({
 
   top: function() {
     var limit = this.TOP_LIMIT;
-    return this.forge().query(function(q) {
-      q.orderBy('rank', 'ASC').limit(limit);
+    return this.forge().query(function(query) {
+      query.orderBy('rank', 'ASC').limit(limit);
     }).fetchAll();
   }
 });

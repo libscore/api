@@ -19,8 +19,11 @@ function *show(name, next) {
   var site = yield Site.where({ domain: name }).fetch({
     withRelated: {
       'libraries': false,
-      'libraries.history': function(q) {
-        return q.select(bookshelf.knex.raw('distinct on (library_id) *')).orderBy('library_id').orderBy('created_at', 'desc');
+      'libraries.history': function(query) {
+        query
+          .select(bookshelf.knex.raw('distinct on (library_id) *'))
+          .orderBy('library_id')
+          .orderBy('created_at', 'desc');
       }
     }
   });
