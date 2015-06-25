@@ -1,4 +1,7 @@
 var knex = require('knex');
 var conn = knex(require('./knexfile.js'));
 
-module.exports = require('bookshelf')(conn);
+var bookshelf = require('bookshelf')(conn);
+bookshelf.plugin('registry');
+
+module.exports = bookshelf;

@@ -11,9 +11,9 @@ var History = bookshelf.Model.extend({
   tableName: 'histories',
 
   library: function() {
-    return this.belongsTo(Library);
+    return this.belongsTo('Library');
   },
 });
 
 
-module.exports = History;
+module.exports = bookshelf.model('History', History);

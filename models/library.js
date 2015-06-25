@@ -14,17 +14,17 @@ var Library = bookshelf.Model.extend({
   tableName: 'libraries',
 
   history: function() {
-    return this.hasOne(History);
+    return this.hasOne('History');
   },
 
   histories: function() {
-    return this.hasMany(History);
+    return this.hasMany('History');
   },
 
   sites: function() {
-    return this.belongsToMany(Site);
+    return this.belongsToMany('Site');
   }
 });
 
 
-module.exports = Library;
+module.exports = bookshelf.model('Library', Library);
