@@ -16,7 +16,7 @@ exports.up = function(knex, Promise) {
     .createTable('libraries_sites', function(table) {
       table.integer('library_id').references('libraries.id').index();
       table.integer('site_id').references('sites.id').index();
-      table.enu('context', ['desktop', 'mobile', 'both']);
+      table.enu('platform', ['desktop', 'mobile', 'both']);
       table.timestamp('updated_at').notNullable().defaultTo(knex.raw('now()'));
       table.unique(['library_id', 'site_id']);
     }); /*.then(function() {      // TODO when we Dockerize, we can add this

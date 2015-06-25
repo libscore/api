@@ -32,7 +32,7 @@ function *show(name, next) {
     var row = {
       name: library.get('name'),
       count: library.related('history').get('count'),
-      type: (library.pivot.get('context') === 'mobile' ? 'mobile' : 'desktop')  // 'both' converted to 'desktop'
+      type: (library.pivot.get('platform') === 'mobile' ? 'mobile' : 'desktop')  // 'both' converted to 'desktop'
     };
     (library.get('type') === 'library' ? libraries : scripts).push(row);
   });
