@@ -11,7 +11,7 @@ var Site = bookshelf.Model.extend({
   tableName: 'sites',
 
   libraries: function() {
-    return this.belongsToMany(Library);
+    return this.belongsToMany(Library).withPivot('context');
   }
 }, {
   TOP_LIMIT: 5000,

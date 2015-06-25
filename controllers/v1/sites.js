@@ -1,12 +1,13 @@
-var  _ = require('lodash');
-var Site = require('../models/site');
+var _ = require('lodash');
+var bookshelf = require('../../db/bookshelf');
+var Site = require('../../models/site');
 
 
 function *index(next) {
   var sites = yield Site.top();
-  var resource = this.request.protocol + '://' + this.request.host + '/sites/'
-  var results = _.map(sites.toJSON(), function(site) {
-    return { url: site.domain, rank: site.rank, resource: resource + site.domain }
+  var resource = this.request.protocol + '://' + this.request.host + '/sites/';
+  var results = sites.map(function(site) {
+    return { url: site.get('domain'), rank: site.get('rank'), resource: resource + site.get('domain') };
   });
   this.body = {
     results: results,
@@ -15,8 +16,31 @@ function *index(next) {
 };
 
 function *show(name, next) {
-  var site = yield Site.forge().where({ domain: name });
-  this.body = {};
+  var site = yield Site.where({ domain: name }).fetch({
+    withRelated: {
+      'libraries': false,
+      'libraries.history': function(q) {
+        return q.select(bookshelf.knex.raw('distinct on (library_id) *')).orderBy('library_id').orderBy('created_at', 'desc');
+      }
+    }
+  });
+  var libraries = [], scripts = [];
+  site.related('libraries').forEach(function(library) {
+    var row = {
+      name: library.get('name'),
+      count: library.related('history').get('count'),
+      type: (library.pivot.get('context') === 'mobile' ? 'mobile' : 'desktop')  // 'both' converted to 'desktop'
+    };
+    (library.get('type') === 'library' ? libraries : scripts).push(row);
+  });
+  this.body = {
+    url: site.get('domain'),
+    rank: site.get('rank'),
+    libraries: _.sortBy(libraries, 'count').reverse(),
+    scripts: _.sortBy(scripts, 'count').reverse(),
+    total: libraries.length,   // v1 ingestion total calculation does not include scripts
+    meta: {}
+  };
 };
 
 

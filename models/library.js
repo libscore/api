@@ -17,6 +17,10 @@ var Library = bookshelf.Model.extend({
     return this.hasOne(History);
   },
 
+  histories: function() {
+    return this.hasMany(History);
+  },
+
   sites: function() {
     return this.belongsToMany(Site);
   }
