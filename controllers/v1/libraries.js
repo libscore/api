@@ -17,7 +17,11 @@ function *badge(name, next) {
 };
 
 function *index(next) {
-  this.body = [];
+
+  this.body = {
+    results: [],
+    meta: {}
+  };
 };
 
 function *search(query, next) {
@@ -62,7 +66,8 @@ function *show(name, next) {
         rank: site.get('rank'),
         resource: resource + site.get('domain')
       }
-    })
+    }),
+    meta: {}
   };
 };
 
