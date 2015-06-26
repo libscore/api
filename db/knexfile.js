@@ -1,5 +1,5 @@
-module.exports = {
-  client: 'postgresql',
+var config = {
+  client: 'postgres',
   debug: process.env.NODE_ENV !== 'production',
   connection: {
     database: 'libscore',
@@ -9,4 +9,9 @@ module.exports = {
   migrations: {
     tableName: 'knex_migrations'
   }
-}
+};
+
+module.exports = {
+  development: config,
+  production: config
+};
