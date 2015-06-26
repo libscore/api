@@ -2,7 +2,7 @@
 
 var async = require('async');
 var bookshelf = require('../db/bookshelf');
-var http = require('https');
+var http = require('http');
 var os = require('os');
 var parse = require('csv-parse');
 var stream = require('stream');
@@ -10,8 +10,7 @@ var unzip = require('unzip');
 
 var LOW_PRIORITY = 1;
 var HIGH_PRIORITY = 5;
-// var SOURCE_URL = 'http://s3.amazonaws.com/alexa-static/top-1m.csv.zip';
-var SOURCE_URL = 'https://dl.dropboxusercontent.com/u/796228/top-100.csv.zip';
+var SOURCE_URL = 'http://s3.amazonaws.com/alexa-static/top-1m.csv.zip';
 
 // 12 hours ago to compensate for possible timezone misconfigurations
 var updatedAt = new Date(Date.now() - (60 * 60 * 12 * 1000));
