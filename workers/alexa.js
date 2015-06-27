@@ -11,9 +11,7 @@ var unzip = require('unzip');
 var LOW_PRIORITY = 1;
 var HIGH_PRIORITY = 5;
 var SOURCE_URL = 'http://s3.amazonaws.com/alexa-static/top-1m.csv.zip';
-
-// 12 hours ago to compensate for possible timezone misconfigurations
-var updatedAt = new Date(Date.now() - (60 * 60 * 12 * 1000));
+var UPDATE_AT = new Date();
 
 var pass = new stream.PassThrough();
 var parser = parse();
@@ -39,7 +37,8 @@ parser.on('finish', function(d) {
 
 
 function drain() {
-  bookshelf.knex('sites').where('updated_at', '<', updatedAt).update({ rank: null }).finally(function() {
+  var updated = new Date(UPDATE_AT - (60 * 60 * 12 * 1000));  // 12 hours
+  bookshelf.knex('sites').where('updated_at', '<', updated).update({ rank: null }).finally(function() {
     bookshelf.knex.destroy();
   });
 };
@@ -66,7 +65,7 @@ function work(task, callback) {
       if (rows.length > 0 && rows[0].count > 0) {
         return bookshelf.knex('sites')
           .where({ domain: task.domain })
-          .update({ rank: task.rank, updated_at: updatedAt });
+          .update({ rank: task.rank, updated_at: UPDATE_AT });
       } else {
         return bookshelf.knex('sites')
           .insert({ domain: task.domain, rank: task.rank });
