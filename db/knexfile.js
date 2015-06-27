@@ -1,3 +1,5 @@
+var os = require('os');
+
 var config = {
   client: 'postgres',
   debug: process.env.NODE_ENV !== 'production',
@@ -8,6 +10,10 @@ var config = {
   },
   migrations: {
     tableName: 'knex_migrations'
+  },
+  pool: {
+    min: 0,
+    max: os.cpus().length * 2
   }
 };
 

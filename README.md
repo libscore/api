@@ -20,7 +20,9 @@
 
 ### Running
 
-1. `pm2 start --node-args"--harmony" app.js -i max`
+1. `su api`
+1. `cd /opt/libscore/api`
+1. `pm2 restart pm2.json` (This file will be present on the server)
 
 ### Deploying
 
