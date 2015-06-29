@@ -6,7 +6,7 @@ var os = require('os');
 var spawn = require('child_process').spawn;
 
 
-var IMAGE_ID = '';
+var IMAGE_ID = process.env.LIBSCORE_CRAWLER_IMAGE;
 var LOCAL_IP = os.networkInterfaces().eth0[0].address;
 var LIBSCORE_PATH = '/opt/libscore/crawler';
 var NUM_CRAWLERS = 2;
