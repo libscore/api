@@ -8,7 +8,7 @@ var spawn = require('child_process').spawn;
 
 var IMAGE_ID = process.env.LIBSCORE_CRAWLER_IMAGE;
 var LOCAL_IP = os.networkInterfaces().eth0[0].address;
-var LIBSCORE_PATH = '/opt/libscore/crawler';
+var LIBSCORE_PATH = '/opt/libscore';
 var NUM_CRAWLERS = 2;
 var START_TIME = Date.now();
 
@@ -22,11 +22,11 @@ var api = new DigitalOcean(process.env.LIBSCORE_DO_API);
 
 
 async.series([
-  runScript.bind(runScript, 'alexa.js'),
+  runScript.bind(runScript, LIBSCORE_PATH + '/api/workers/alexa.js'),
   enqueueSites,
   startCrawlers,
   waitForCrawlers,
-  runScript.bind(runScript, 'history.js')
+  runScript.bind(runScript, LIBSCORE_PATH + '/api/workers/history.js')
 ], function(err) {
   queue.shutdown(5000, function() {
     console.log('Done!');
@@ -66,11 +66,11 @@ function startCrawlers(callback) {
         '#!/bin/bash',
         '',
         'apt-get update',
-        'apt-get upgrade'
-        'git clone git@github.com:libscore/crawler.git ' + LIBSCORE_PATH,
-        'cd ' + LIBSCORE_PATH,
+        'apt-get upgrade',
+        'git clone git@github.com:libscore/crawler.git ' + LIBSCORE_PATH + '/crawler',
+        'cd ' + LIBSCORE_PATH + '/crawler',
         'npm install',
-        'node ' + LIBSCORE_PATH + '/runner.js' + START_TIME + ' ' + LOCAL_IP
+        'node ' + LIBSCORE_PATH + '/crawler/runner.js' + START_TIME + ' ' + LOCAL_IP
       ].join('')
     }, next.bind(next, null));
   }, callback);

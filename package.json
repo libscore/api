@@ -19,10 +19,12 @@
     "kue": "^0.9.3",
     "lodash": "^3.9.3",
     "pg": "^4.4.0",
+    "progress": "^1.1.8",
     "request": "^2.58.0",
     "unzip": "^0.1.11"
   },
   "engines": {
     "node": ">= 0.12"
-  }
+  },
+  "private": true
 }
