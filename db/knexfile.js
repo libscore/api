@@ -1,6 +1,6 @@
 var os = require('os');
 
-module.exports = {
+var config = {
   client: 'postgres',
   debug: process.env.NODE_ENV !== 'production',
   connection: {
@@ -15,4 +15,9 @@ module.exports = {
     min: 0,
     max: os.cpus().length * 2
   }
+};
+
+module.exports = {
+  development: config,
+  production: config
 };

@@ -1,6 +1,7 @@
 var knex = require('knex');
-var conn = knex(require('./knexfile.js'));
+var config = require('./knexfile');
 
+var conn = knex(config[process.env.NODE_ENV] || config)
 var bookshelf = require('bookshelf')(conn);
 bookshelf.plugin('registry');
 
