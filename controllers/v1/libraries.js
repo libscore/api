@@ -53,21 +53,18 @@ function *index(type, next) {
 };
 
 function *search(query, next) {
-  var libraries = yield Library.where('name', 'ILIKE', '%' + query + '%').fetchAll({
-    withRelated: {
-      'history': function(query) {
-        query
-          .select(bookshelf.knex.raw('distinct on (library_id) *'))
-          .orderBy('library_id')
-          .orderBy('created_at', 'desc');
-      }
-    }
-  })
+  var libraries = yield bookshelf.knex('libraries')
+    .select('libraries.name', 'libraries.type', 'histories.count')
+    .join('histories', 'libraries.id', 'histories.library_id')
+    .where('histories.created_at', 'in', bookshelf.knex('histories').max('created_at'))
+    .andWhere('libraries.name', 'ILIKE', bookshelf.knex.raw('?', '%' + query + '%'))
+    .orderBy('histories.count', 'desc')
+    .limit(25);
   var results = libraries.map(function(library) {
     return {
-      name: library.get('name'),
-      count: library.related('history').get('count'),
-      type: library.get('type')
+      name: library.name,
+      count: library.count,
+      type: library.type
     };
   })
   this.body = _.sortBy(results, 'count').reverse();
