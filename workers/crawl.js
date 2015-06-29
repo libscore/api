@@ -8,8 +8,7 @@ var spawn = require('child_process').spawn;
 
 var IMAGE_ID = '';
 var LOCAL_IP = os.networkInterfaces().eth0[0].address;
-var LIBSCORE_PATH = '/opt/libscore/';
-var NODE_PATH = '/usr/local/bin/node';
+var LIBSCORE_PATH = '/opt/libscore/crawler';
 var NUM_CRAWLERS = 2;
 var START_TIME = Date.now();
 
@@ -66,7 +65,12 @@ function startCrawlers(callback) {
       user_data: [
         '#!/bin/bash',
         '',
-        NODE_PATH + ' ' + LIBSCORE_PATH + 'cralwer/crawl.js' + START_TIME + ' ' + LOCAL_IP
+        'apt-get update',
+        'apt-get upgrade'
+        'git clone git@github.com:libscore/crawler.git ' + LIBSCORE_PATH,
+        'cd ' + LIBSCORE_PATH,
+        'npm install',
+        'node ' + LIBSCORE_PATH + '/runner.js' + START_TIME + ' ' + LOCAL_IP
       ].join('')
     }, next.bind(next, null));
   }, callback);
