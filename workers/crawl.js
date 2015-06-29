@@ -7,8 +7,10 @@ var spawn = require('child_process').spawn;
 
 
 var IMAGE_ID = '';
+var LOCAL_IP = os.networkInterfaces().eth0[0].address;
+var LIBSCORE_PATH = '/opt/libscore/';
+var NODE_PATH = '/usr/local/bin/node';
 var NUM_CRAWLERS = 2;
-var PRIVATE_IP = os.networkInterfaces().eth1[0].address;
 var START_TIME = Date.now();
 
 
@@ -64,7 +66,7 @@ function startCrawlers(callback) {
       user_data: [
         '#!/bin/bash',
         '',
-        '/usr/local/bin/node /opt/libscore/crawler/crawl.js ' + START_TIME + ' ' + PRIVATE_IP
+        NODE_PATH + ' ' + LIBSCORE_PATH + 'cralwer/crawl.js' + START_TIME + ' ' + LOCAL_IP
       ].join('')
     }, next.bind(next, null));
   }, callback);
