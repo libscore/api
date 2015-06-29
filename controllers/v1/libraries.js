@@ -41,12 +41,13 @@ function *index(type, next) {
   var resource = this.request.protocol + '://' + this.request.host + '/libraries/';
   this.body = {
     results: libraries.map(function(library) {
-      return {
-        library: library.name,
+      var result = {
         count: [library.count],
         resource: resource + library.name,
         github: ""
-      }
+      };
+      result[type] = library.name
+      return result;
     }),
     meta: {}
   };
