@@ -19,6 +19,7 @@ var queue = kue.createQueue({
 });
 kue.app.set('title', 'Libscore Crawl Queue');
 kue.app.listen(3000);
+queue.watchStuckJobs();
 var api = new DigitalOcean(process.env.LIBSCORE_DO_API);
 
 var crawlers = [];
@@ -89,7 +90,6 @@ function waitForCrawlers(callback) {
     // inactive == queued
     async.every(['inactive', 'active', 'delayed'], function(name, callback) {
       queue[name+'Count'](function(err, count) {
-        console.log(name+'Count:', count);
         callback(count === 0);
       });
     }, function(every) {
