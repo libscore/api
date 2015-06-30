@@ -25,16 +25,17 @@ var api = new DigitalOcean(process.env.LIBSCORE_DO_API);
 var crawlers = [];
 
 
-async.series([
+async.parallel([
   enqueueSites,
   startCrawlers,
-  waitForCrawlers,
-  shutdownCrawlers
+  waitForCrawlers
 ], function(err) {
   console.log("Crawler series error", err);
   queue.shutdown(5000, function() {
-    console.log('Done!');
-    process.exit(0);
+    shutdownCrawlers(function() {
+      console.log('Done!');
+      process.exit(0);
+    });
   });
 });
 
