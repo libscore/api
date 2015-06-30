@@ -2,7 +2,7 @@
 
 var async = require('async');
 var bookshelf = require('../db/bookshelf');
-var http = require('https');
+var http = require('http');
 var os = require('os');
 var parse = require('csv-parse');
 var Progress = require('progress');
@@ -11,8 +11,7 @@ var unzip = require('unzip');
 
 var LOW_PRIORITY = 1;
 var HIGH_PRIORITY = 5;
-var SOURCE_URL = 'https://dl.dropboxusercontent.com/u/796228/top-1k.csv.zip';
-// var SOURCE_URL = 'http://s3.amazonaws.com/alexa-static/top-1m.csv.zip';
+var SOURCE_URL = 'http://s3.amazonaws.com/alexa-static/top-1m.csv.zip';
 
 var pass = new stream.PassThrough();
 var parser = parse();
@@ -20,7 +19,7 @@ var queue = async.priorityQueue(work, os.cpus().length);
 queue.drain = drain;
 var bar = new Progress('Importing [:bar] :percent :etas ', {
   incomplete: ' ',
-  total: 1000,
+  total: 1000000,
   width: 40
 });
 

@@ -10,7 +10,7 @@ var spawn = require('child_process').spawn;
 var IMAGE_ID = process.env.LIBSCORE_DO_IMAGE_ID;
 var SSH_KEY = process.env.LIBSCORE_DO_SSH_ID;
 var LIBSCORE_PATH = '/opt/libscore';
-var NUM_CRAWLERS = 2;
+var NUM_CRAWLERS = 40;
 var START_TIME = Date.now();
 
 
