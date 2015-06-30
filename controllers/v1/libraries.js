@@ -18,6 +18,7 @@ function *badge(name, next) {
 };
 
 function *index(type, next) {
+  var resource = this.request.protocol + '://' + this.request.host + '/' + type + '/';
   if (type === 'libraries') {
     type = 'library';
   } else if (type === 'scripts') {
@@ -38,7 +39,6 @@ function *index(type, next) {
     .where({ type: type })
     .orderBy('count', 'desc')
     .limit(1000);
-  var resource = this.request.protocol + '://' + this.request.host + '/libraries/';
   this.body = {
     results: libraries.map(function(library) {
       var result = {

@@ -17,7 +17,9 @@ var config = {
   }
 };
 
-module.exports = {
-  development: config,
-  production: config
-};
+// Only way to get knex to work in app and migration when
+// NODE_ENV is either defined or not
+config.development = config;
+config.production = config;
+
+module.exports = config;
