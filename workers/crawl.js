@@ -41,11 +41,9 @@ async.series([
 function enqueueSites(callback) {
   console.log('Enqueuing sites');
   bookshelf.knex('sites')
-    .select(bookshelf.knex.raw('distinct on (library_id) *'))
     .whereNotNull('rank')
     .andWhere('updated_at', '<=', moment().subtract(24, 'hours'))
-    .orderBy('library_id')
-    .orderBy('updated_at')
+    .orderBy('rank', 'asc')
     .then(function(rows) {
       console.log('Found', rows.length, 'sites');
       async.eachLimit(rows, 50, function(row, callback) {
