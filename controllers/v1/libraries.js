@@ -91,16 +91,22 @@ function *show(type, name, next) {
     }
   });
   this.body = {
-    count: library.related('histories').pluck('count'),
-    sites: library.related('sites').map(function(site) {
+    github: "",
+    meta: {}
+  }
+  if (library) {
+    this.body.count = library.related('histories').pluck('count');
+    this.body.sites = library.related('sites').map(function(site) {
       return {
         url: site.get('domain'),
         rank: site.get('rank'),
         resource: resource + site.get('domain')
       }
-    }),
-    meta: {}
-  };
+    });
+  } else {
+    this.body.count = [];
+    this.body.sites = [];
+  }
 };
 
 
