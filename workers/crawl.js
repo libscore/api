@@ -48,7 +48,7 @@ function enqueueSites(callback) {
     .orderBy('rank', 'asc')
     .then(function(rows) {
       console.log('Found', rows.length, 'sites');
-      async.eachLimit(rows, 50, function(row, callback) {
+      async.eachLimit(rows, 10, function(row, callback) {
         queue.create('website', {
           id: row.id,
           domain: row.domain,
