@@ -1,5 +1,7 @@
 var _ = require('lodash');
 var bookshelf = require('../../db/bookshelf');
+var parse = require('co-body');
+var url = require('url');
 var Site = require('../../models/site');
 
 
@@ -27,27 +29,64 @@ function *show(name, next) {
       }
     }
   });
-  var libraries = [], scripts = [];
+  var libraries = {}, scripts = {};
   site.related('libraries').forEach(function(library) {
-    var row = {
+    var hash = library.get('type') === 'library' ? libraries : scripts;
+    var platform = library.pivot.get('platform');
+    // If library/script is on both mobile and desktop, only include desktop
+    if (hash[library.get('name')]) {
+      platform = 'desktop';
+    }
+    hash[library.get('name')] = {
       name: library.get('name'),
       count: library.related('history').get('count'),
-      type: (library.pivot.get('platform') === 'mobile' ? 'mobile' : 'desktop')  // 'both' converted to 'desktop'
+      type: platform
     };
-    (library.get('type') === 'library' ? libraries : scripts).push(row);
   });
   this.body = {
     url: site.get('domain'),
     rank: site.get('rank'),
-    libraries: _.sortBy(libraries, 'count').reverse(),
-    scripts: _.sortBy(scripts, 'count').reverse(),
+    libraries: _.sortBy(_.values(libraries), 'count').reverse(),
+    scripts: _.sortBy(_.values(scripts), 'count').reverse(),
     total: libraries.length,   // v1 ingestion total calculation does not include scripts
     meta: {}
   };
 };
 
+function *update(name, next) {
+  /* Expected format:
+    {
+      libs: {
+        desktop: [...],
+        mobile: [...]
+      },
+      scripts: {
+        desktop: [...],
+        mobile: [...]
+      }
+    }
+  */
+  var body = yield parse.json(this.request);
+  var libraries = [];
+  var add = function(type, platform, identifier) {
+    libraries.push({ type: type, platform: platform, identifier: identifier });
+  };
+  body.libs.desktop.forEach(add.bind(add, 'library', 'desktop'));
+  body.libs.mobile.forEach(add.bind(add, 'library', 'mobile'));
+  body.scripts.desktop.forEach(add.bind(add, 'script', 'desktop'));
+  body.scripts.mobile.forEach(add.bind(add, 'script', 'mobile'));
+
+  Site.where({ domain: name }).fetchOne().then(function(site) {
+    site.updated_at = new Date();
+    return site.save();
+  }).then(function(site) {
+
+  });
+}
+
 
 module.exports = {
   index: index,
-  show: show
+  show: show,
+  update: update
 };

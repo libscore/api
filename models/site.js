@@ -6,7 +6,7 @@ var Site = bookshelf.Model.extend({
   id: integer
   domain: string
   rank: integer (null if > 1m)
-  updated_at: timestamp
+  updated_at: timestamp (updated by crawler, not alexa rank change)
   */
   tableName: 'sites',
 

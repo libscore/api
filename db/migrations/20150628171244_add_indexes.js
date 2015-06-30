@@ -19,9 +19,6 @@ exports.down = function(knex, Promise) {
       table.dropIndex('count');
       table.dropIndex('created_at');
     }),
-    knex.schema.table('libraries_sites', function(table) {
-      table.dropIndex('updated_at');
-    }),
     knex.schema.table('sites', function(table) {
       table.dropIndex('updated_at');
     })

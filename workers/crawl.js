@@ -2,11 +2,13 @@ var async = require('async');
 var bookshelf = require('../db/bookshelf');
 var DigitalOcean = require('do-wrapper');
 var kue = require('kue');
+var moment = require('moment');
 var os = require('os');
 var spawn = require('child_process').spawn;
 
 
-var IMAGE_ID = process.env.LIBSCORE_CRAWLER_IMAGE;
+var IMAGE_ID = process.env.LIBSCORE_DO_IMAGE_ID;
+var SSH_KEY = process.env.LIBSCORE_DO_SSH_ID;
 var LOCAL_IP = os.networkInterfaces().eth0[0].address;
 var LIBSCORE_PATH = '/opt/libscore';
 var NUM_CRAWLERS = 2;
@@ -20,14 +22,16 @@ kue.app.set('title', 'Libscore Crawl Queue');
 kue.app.listen(3000);
 var api = new DigitalOcean(process.env.LIBSCORE_DO_API);
 
+var crawlers = [];
+
 
 async.series([
-  runScript.bind(runScript, LIBSCORE_PATH + '/api/workers/alexa.js'),
   enqueueSites,
   startCrawlers,
   waitForCrawlers,
-  runScript.bind(runScript, LIBSCORE_PATH + '/api/workers/history.js')
+  shutdownCrawlers
 ], function(err) {
+  console.log("Crawler series error", err);
   queue.shutdown(5000, function() {
     console.log('Done!');
     process.exit(0);
@@ -36,25 +40,34 @@ async.series([
 
 
 function enqueueSites(callback) {
-  bookshelf.knex('sites').select('id', 'domain', 'rank').whereNotNull('rank').then(function(rows) {
-    async.eachLimit(rows, 50, function(row, callback) {
-      queue.create('website', {
-        id: row.id,
-        domain: row.domain,
-        rank: row.rank
-      }).attempts(3).backoff({ delay: 60*1000, type: 'fixed' }).save(callback);
-    }, callback);
-  });
+  console.log('Enqueuing sites');
+  bookshelf.knex('sites')
+    .select(bookshelf.knex.raw('distinct on (library_id) *'))
+    .whereNotNull('rank')
+    .andWhere('updated_at', '<=', momemt.subtract(24, 'hours'))
+    .orderBy('library_id')
+    .orderBy('updated_at')
+    .then(function(rows) {
+      console.log('Found', rows.length, 'sites');
+      async.eachLimit(rows, 50, function(row, callback) {
+        queue.create('website', {
+          id: row.id,
+          domain: row.domain,
+          rank: row.rank
+        }).attempts(3).backoff({ delay: 60*1000, type: 'fixed' }).removeOnComplete(true).save(callback);
+      }, callback);
+    });
 }
 
-function runScript(name, callback) {
-  var child = spawn('node', [name], { stdio: 'inherit'});
-  child.on('close', function(code) {
-    callback(code === 0);
-  });
+function shutdownCrawlers(callback) {
+  console.log('Shutting Down Crawlers');
+  async.each(crawlers, function(crawler) {
+    api.dropletsDelete(crawler, callback);
+  }, callback);
 }
 
 function startCrawlers(callback) {
+  console.log('Starting crawlers');
   async.timesSeries(NUM_CRAWLERS, function(i, next) {
     api.dropletsCreate({
       name: 'crawler-' + i,
@@ -62,27 +75,24 @@ function startCrawlers(callback) {
       size: '64GB',
       image: IMAGE_ID,
       private_networking: true,
-      user_data: [
-        '#!/bin/bash',
-        '',
-        'apt-get update',
-        'apt-get upgrade',
-        'git clone git@github.com:libscore/crawler.git ' + LIBSCORE_PATH + '/crawler',
-        'cd ' + LIBSCORE_PATH + '/crawler',
-        'npm install',
-        'node ' + LIBSCORE_PATH + '/crawler/runner.js' + START_TIME + ' ' + LOCAL_IP
-      ].join('')
-    }, next.bind(next, null));
+      ssh_keys: [SSH_KEY]
+    }, function(err, response) {
+      console.log('DO', err, response.body);
+      next(null);
+    });
   }, callback);
 }
 
 function waitForCrawlers(callback) {
+  console.log('Waiting for crawlers');
   var done = false;
   async.until(function() {
     return done;
   }, function(callback) {
-    async.every(['queued', 'active', 'delayed'], function(name, callback) {
+    // inactive == queued
+    async.every(['inactive', 'active', 'delayed'], function(name, callback) {
       queue[name+'Count'](function(err, count) {
+        console.log(name+'Count:', count);
         callback(count === 0);
       });
     }, function(every) {

@@ -18,6 +18,7 @@ app.use(route.get('/v1/:type', v1.libraries.index));
 app.use(route.get('/v1/:type/:name', v1.libraries.show));
 app.use(route.get('/v1/sites', v1.sites.index));
 app.use(route.get('/v1/sites/:name', v1.sites.show));
+app.use(route.post('/v1/sites/:name', v1.sites.update));
 app.use(route.get('/v1/search/:query', v1.libraries.search));
 
 

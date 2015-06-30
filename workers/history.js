@@ -7,7 +7,7 @@ var Progress = require('progress');
 
 var CREATED_AT = new Date();  // Hold creation time constant
 
-bookshelf.knex('libraries').select('id').then(function(rows) {
+bookshelf.knex('libraries').select('id').whereNotNull('rank').then(function(rows) {
   var bar = new Progress('Calculating [:bar] :percent :etas ', {
     incomplete: ' ',
     total: rows.length,

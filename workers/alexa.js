@@ -1,17 +1,18 @@
-// Download the Alexa top 1m sites and update our sites
+// Download the Alexa top 1m sites and update the rankings
 
 var async = require('async');
 var bookshelf = require('../db/bookshelf');
-var http = require('http');
+var http = require('https');
 var os = require('os');
 var parse = require('csv-parse');
+var Progress = require('progress');
 var stream = require('stream');
 var unzip = require('unzip');
 
 var LOW_PRIORITY = 1;
 var HIGH_PRIORITY = 5;
-var SOURCE_URL = 'http://s3.amazonaws.com/alexa-static/top-1m.csv.zip';
-var UPDATE_AT = new Date();
+var SOURCE_URL = 'https://dl.dropboxusercontent.com/u/796228/top-1k.csv.zip';
+// var SOURCE_URL = 'http://s3.amazonaws.com/alexa-static/top-1m.csv.zip';
 
 var pass = new stream.PassThrough();
 var parser = parse();
@@ -19,28 +20,28 @@ var queue = async.priorityQueue(work, os.cpus().length);
 queue.drain = drain;
 var bar = new Progress('Importing [:bar] :percent :etas ', {
   incomplete: ' ',
-  total: 1000000,
+  total: 1000,
   width: 40
 });
 
-pass.pipe(parser);
-http.get(SOURCE_URL, getList);
 
-parser.on('readable', function() {
-  queue.push('read', LOW_PRIORITY);
-});
+bookshelf.knex('sites').whereNotNull('rank').update({ rank: null }).then(function() {
+  pass.pipe(parser);
+  http.get(SOURCE_URL, getList);
 
-parser.on('finish', function(d) {
-  parser.end();
-  pass.end();
+  parser.on('readable', function() {
+    queue.push('read', LOW_PRIORITY);
+  });
+
+  parser.on('finish', function(d) {
+    parser.end();
+    pass.end();
+  });
 });
 
 
 function drain() {
-  var updated = new Date(UPDATE_AT - (60 * 60 * 12 * 1000));  // 12 hours
-  bookshelf.knex('sites').where('updated_at', '<', updated).update({ rank: null }).finally(function() {
-    bookshelf.knex.destroy();
-  });
+  bookshelf.knex.destroy();
 };
 
 function getList(response) {
@@ -63,12 +64,9 @@ function work(task, callback) {
     bookshelf.knex('sites').count('domain').where({ domain: task.domain }).then(function(rows) {
       bar.tick();
       if (rows.length > 0 && rows[0].count > 0) {
-        return bookshelf.knex('sites')
-          .where({ domain: task.domain })
-          .update({ rank: task.rank, updated_at: UPDATE_AT });
+        return bookshelf.knex('sites').where({ domain: task.domain }).update({ rank: task.rank });
       } else {
-        return bookshelf.knex('sites')
-          .insert({ domain: task.domain, rank: task.rank });
+        return bookshelf.knex('sites').insert({ domain: task.domain, rank: task.rank });
       }
     }).finally(callback);
   }
