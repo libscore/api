@@ -13,7 +13,7 @@ var config = {
   },
   pool: {
     min: 0,
-    max: os.cpus().length * 2
+    max: os.cpus().length * 5
   }
 };
 
