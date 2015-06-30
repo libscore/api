@@ -1,7 +1,6 @@
 var _ = require('lodash');
 var bookshelf = require('../../db/bookshelf');
 var parse = require('co-body');
-var url = require('url');
 var Site = require('../../models/site');
 
 
@@ -66,7 +65,7 @@ function *update(name, next) {
       }
     }
   */
-  var body = yield parse.json(this.request);
+  var body = yield parse.json(this);
   var libraries = [];
   var add = function(type, platform, identifier) {
     libraries.push({ type: type, platform: platform, identifier: identifier });
@@ -76,12 +75,35 @@ function *update(name, next) {
   body.scripts.desktop.forEach(add.bind(add, 'script', 'desktop'));
   body.scripts.mobile.forEach(add.bind(add, 'script', 'mobile'));
 
-  Site.where({ domain: name }).fetchOne().then(function(site) {
+  var where = isNaN(parseInt(name)) ? { domain: name } : { id: parseInt(name) };
+  var updatedAt = new Date();
+  yield Site.where(where).fetch().then(function(site) {
+    if (!site) {
+      return Promise.reject('No site found');
+    }
     site.updated_at = new Date();
     return site.save();
   }).then(function(site) {
-
-  });
+    return Promise.all(libraries.map(function(library) {
+      return bookshelf.knex('libraries').select('id').where({ type: library.type, identifier: library.identifier }).then(function(rows) {
+        if (rows.length > 0) {
+          return Promise.resolve([rows[0].id]);
+        } else {
+          return bookshelf.knex('libraries').insert({ type: library.type, identifier: library.identifier, name: library.identifier }).returning('id');
+        }
+      }).then(function(rows) {
+        library.id = rows[0];
+        return bookshelf.knex('libraries_sites').where({ library_id: library.id, site_id: site.id, platform: library.platform });
+      }).then(function(rows) {
+        if (rows.length > 0) {
+          return bookshelf.knex('libraries_sites').where({ library_id: library.id, site_id: site.id, platform: library.platform }).update({ updated_at: updatedAt });
+        } else {
+          return bookshelf.knex('libraries_sites').insert({ library_id: library.id, site_id: site.id, platform: library.platform, updated_at: updatedAt });
+        }
+      });
+    }));
+  }).catch(function() { }); // Ignored
+  this.body = {};
 }
 
 
