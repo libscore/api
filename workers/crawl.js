@@ -48,12 +48,12 @@ function enqueueSites(callback) {
     .orderBy('rank', 'asc')
     .then(function(rows) {
       console.log('Found', rows.length, 'sites');
-      async.eachLimit(rows, 10, function(row, callback) {
+      async.eachSeries(rows, function(row, callback) {
         queue.create('website', {
           id: row.id,
           domain: row.domain,
           rank: row.rank
-        }).attempts(3).backoff({ delay: 60*1000, type: 'fixed' }).removeOnComplete(true).save(callback);
+        }).attempts(3).backoff({ delay: 60*1000, type: 'fixed' }).save(callback);
       }, callback);
     });
 }
