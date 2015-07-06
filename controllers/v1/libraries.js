@@ -1,5 +1,6 @@
 var _ = require('lodash');
 var knex = require('../../db/knex');
+var moment = require('moment');
 
 
 function *badge(name, next) {
@@ -83,6 +84,7 @@ function *show(type, name, next) {
     var sites = yield knex('sites')
       .innerJoin('libraries_sites', 'sites.id', 'libraries_sites.site_id')
       .where('libraries_sites.library_id', '=', library.id)
+      .andWhere('libraries_sites.updated_at', '>=', moment().subtract(3, 'months').toDate())
       .orderBy('rank', 'asc')
       .limit(1000);
     var histories = yield knex('histories')
