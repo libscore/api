@@ -53,7 +53,7 @@ function enqueueSites(callback) {
           id: row.id,
           domain: row.domain,
           rank: row.rank
-        }).attempts(3).backoff({ delay: 60*1000, type: 'fixed' }).save(callback);
+        }).attempts(5).backoff({ delay: 60*1000, type: 'fixed' }).save(callback);
       }, callback);
     });
 }
