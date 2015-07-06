@@ -33,7 +33,7 @@ API
 1. `cd /opt/libscore/api`
 1. `git pull origin master`
 1. `npm install`
-1. `knex migrate:latest`
+1. `knex migrate:latest --knexfile db/knexfile.js`
 1. `pm2 restart pm2.json` (This file will be present on the server)
 
 Web
