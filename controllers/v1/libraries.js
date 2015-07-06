@@ -1,20 +1,14 @@
 var _ = require('lodash');
-var bookshelf = require('../../db/bookshelf');
-var Library = require('../../models/library');
-var History = require('../../models/history');
+var knex = require('../../db/knex');
 
 
 function *badge(name, next) {
-  var library = yield Library.where({ name: name, type: 'library' }).fetch({
-    withRelated: {
-      'history': function(query) {
-        query.orderBy('created_at', 'desc').limit(1);
-      }
-    }
-  });
+  var library = yield knex('libraries')
+    .innerJoin('histories', 'libraries.id', 'histories.library_id')
+    .where({ name: name, type: 'library' })
+    .orderBy('histories.created_at', 'desc').limit(1).first();
   this.status = 301;
-  var count = library.related('history').get('count');
-  this.redirect('http://img.shields.io/badge/libscore-' + count + '-brightgreen.svg?style=flat-square');
+  this.redirect('http://img.shields.io/badge/libscore-' + library.count + '-brightgreen.svg?style=flat-square');
 };
 
 function *index(type, next) {
@@ -26,16 +20,16 @@ function *index(type, next) {
   } else {
     return yield next;
   }
-  var libraries = yield bookshelf.knex.select('libraries.name', 'sub.count').from(
-    bookshelf.knex.raw(
+  var libraries = yield knex.select('libraries.name', 'histories.count').from(
+    knex.raw(
       "(" +
-      bookshelf.knex('histories')
-        .select(bookshelf.knex.raw('distinct on (library_id) *'))
+      knex('histories')
+        .select(knex.raw('distinct on (library_id) *'))
         .orderBy('library_id')
         .orderBy('created_at', 'desc').toString() +
-      ") as sub"
+      ") as histories"
     )
-  ).innerJoin('libraries', 'libraries.id', '=', 'sub.library_id')
+  ).innerJoin('libraries', 'libraries.id', '=', 'histories.library_id')
     .where({ type: type })
     .orderBy('count', 'desc')
     .limit(1000);
@@ -54,11 +48,11 @@ function *index(type, next) {
 };
 
 function *search(query, next) {
-  var libraries = yield bookshelf.knex('libraries')
+  var libraries = yield knex('libraries')
     .select('libraries.name', 'libraries.type', 'histories.count')
     .join('histories', 'libraries.id', 'histories.library_id')
-    .where('histories.created_at', 'in', bookshelf.knex('histories').max('created_at'))
-    .andWhere('libraries.name', 'ILIKE', bookshelf.knex.raw('?', '%' + query + '%'))
+    .where('histories.created_at', 'in', knex('histories').max('created_at'))
+    .andWhere('libraries.name', 'ILIKE', knex.raw('?', '%' + query + '%'))
     .orderBy('histories.count', 'desc')
     .limit(25);
   var results = libraries.map(function(library) {
@@ -80,27 +74,27 @@ function *show(type, name, next) {
     return yield next;
   }
   var resource = this.request.protocol + '://' + this.request.host + '/sites/';
-  var library = yield Library.where({ name: name, type: type }).fetch({
-    withRelated: {
-      'sites': function(query) {
-        query.orderBy('rank', 'asc').limit(1000);
-      },
-      'histories': function(query) {
-        query.orderBy('created_at', 'desc').limit(6);     // 6 months
-      }
-    }
-  });
+  var library = yield knex('libraries').where({ name: name, type: type }).first();
   this.body = {
     github: "",
     meta: {}
   }
   if (library) {
-    this.body.count = library.related('histories').pluck('count');
-    this.body.sites = library.related('sites').map(function(site) {
+    var sites = yield knex('sites')
+      .innerJoin('libraries_sites', 'sites.id', 'libraries_sites.site_id')
+      .where('libraries_sites.library_id', '=', library.id)
+      .orderBy('rank', 'asc')
+      .limit(1000);
+    var histories = yield knex('histories')
+      .where('library_id', '=', library.id)
+      .orderBy('created_at', 'desc')
+      .limit(6);      // 6 months
+    this.body.count = _.pluck(histories, 'count');
+    this.body.sites = sites.map(function(site) {
       return {
-        url: site.get('domain'),
-        rank: site.get('rank'),
-        resource: resource + site.get('domain')
+        url: site.domain,
+        rank: site.rank,
+        resource: resource + site.domain
       }
     });
   } else {

@@ -21,7 +21,6 @@ app.use(route.get('/v1/sites/:name', v1.sites.show));
 app.use(route.post('/v1/sites/:name', v1.sites.update));
 app.use(route.get('/v1/search/:query', v1.libraries.search));
 
-
 app.use(route.get('/badge/:name.svg', v1.libraries.badge));
 
 app.listen(9000);
