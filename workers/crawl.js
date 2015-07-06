@@ -1,6 +1,6 @@
 var async = require('async');
-var bookshelf = require('../db/bookshelf');
 var DigitalOcean = require('do-wrapper');
+var knex = require('../db/knex');
 var kue = require('kue');
 var moment = require('moment');
 var os = require('os');
@@ -42,7 +42,7 @@ async.parallel([
 
 function enqueueSites(callback) {
   console.log('Enqueuing sites');
-  bookshelf.knex('sites')
+  knex('sites')
     .whereNotNull('rank')
     .andWhere('updated_at', '<=', moment().subtract(24, 'hours'))
     .orderBy('rank', 'asc')

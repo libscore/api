@@ -1,8 +1,8 @@
 // Download the Alexa top 1m sites and update the rankings
 
 var async = require('async');
-var bookshelf = require('../db/bookshelf');
 var http = require('http');
+var knex = require('../db/knex');
 var os = require('os');
 var parse = require('csv-parse');
 var Progress = require('progress');
@@ -24,7 +24,7 @@ var bar = new Progress('Importing [:bar] :percent :etas ', {
 });
 
 
-bookshelf.knex('sites').whereNotNull('rank').update({ rank: null }).then(function() {
+knex('sites').whereNotNull('rank').update({ rank: null }).then(function() {
   pass.pipe(parser);
   http.get(SOURCE_URL, getList);
 
@@ -40,7 +40,7 @@ bookshelf.knex('sites').whereNotNull('rank').update({ rank: null }).then(functio
 
 
 function drain() {
-  bookshelf.knex.destroy();
+  knex.destroy();
 };
 
 function getList(response) {
@@ -60,12 +60,12 @@ function work(task, callback) {
   } else {
     // Insert records
     // TODO use upsert when Posgres 9.5 comes out
-    bookshelf.knex('sites').count('domain').where({ domain: task.domain }).then(function(rows) {
+    knex('sites').count('domain').where({ domain: task.domain }).then(function(rows) {
       bar.tick();
       if (rows.length > 0 && rows[0].count > 0) {
-        return bookshelf.knex('sites').where({ domain: task.domain }).update({ rank: task.rank });
+        return knex('sites').where({ domain: task.domain }).update({ rank: task.rank });
       } else {
-        return bookshelf.knex('sites').insert({ domain: task.domain, rank: task.rank });
+        return knex('sites').insert({ domain: task.domain, rank: task.rank });
       }
     }).finally(callback);
   }
