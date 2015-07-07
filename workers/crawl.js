@@ -15,18 +15,6 @@ var NUM_CRAWLERS = 10;
 var queue = kue.createQueue({
   redis: { auth: process.env.LIBSCORE_REDIS_PASS }
 });
-kue.app.set('title', 'Libscore Crawl Queue');
-kue.app.listen(3000);
-queue.watchStuckJobs();
-queue.on('job failed', function(id, result) {
-  kue.Job.get(id, function(err, job) {
-    if (!err && job) {
-      addSite(job.data, function() {
-        job.remove();
-      });
-    }
-  });
-});
 
 
 async.parallel([
@@ -41,13 +29,6 @@ async.parallel([
   });
 });
 
-function addSite(site, callback) {
-  site.priority += 1;
-  if (site.priority <= 3) {
-    queue.create('website', site).priority(site.priority).ttl(60*1000).save(callback);
-  }
-}
-
 function enqueueSites(callback) {
   console.log('Enqueuing sites');
   knex('sites')
@@ -57,13 +38,13 @@ function enqueueSites(callback) {
     .then(function(rows) {
       console.log('Found', rows.length, 'sites');
       async.eachSeries(rows, function(row, callback) {
-        addSite({
+        queue.create('website', {
           title: row.domain,
           id: row.id,
           domain: row.domain,
           rank: row.rank,
           priority: 0
-        }, callback);
+        }).priority(0).ttl(60*1000).save(callback);
       }, callback);
     });
 }
