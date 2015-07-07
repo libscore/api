@@ -1,17 +1,15 @@
 var async = require('async');
-var DigitalOcean = require('do-wrapper');
 var knex = require('../db/knex');
 var kue = require('kue');
 var moment = require('moment');
 var os = require('os');
 var spawn = require('child_process').spawn;
 
+var doLauncher = require('./do-launcher');
 
-var IMAGE_ID = process.env.LIBSCORE_DO_IMAGE_ID;
-var SSH_KEY = process.env.LIBSCORE_DO_SSH_ID;
+
 var LIBSCORE_PATH = '/opt/libscore';
-var NUM_CRAWLERS = 40;
-var START_TIME = Date.now();
+var NUM_CRAWLERS = 10;
 
 
 var queue = kue.createQueue({
@@ -20,9 +18,15 @@ var queue = kue.createQueue({
 kue.app.set('title', 'Libscore Crawl Queue');
 kue.app.listen(3000);
 queue.watchStuckJobs();
-var api = new DigitalOcean(process.env.LIBSCORE_DO_API);
-
-var crawlers = [];
+queue.on('job failed', function(id, result) {
+  kue.Job.get(id, function(err, job) {
+    if (!err && job) {
+      addSite(job.data, function() {
+        job.remove();
+      });
+    }
+  });
+});
 
 
 async.parallel([
@@ -32,13 +36,17 @@ async.parallel([
 ], function(err) {
   console.log("Crawler series error", err);
   queue.shutdown(5000, function() {
-    shutdownCrawlers(function() {
-      console.log('Done!');
-      process.exit(0);
-    });
+    console.log('Done!');
+    process.exit(0);
   });
 });
 
+function addSite(site, callback) {
+  site.priority += 1;
+  if (site.priority <= 3) {
+    queue.create('website', site).priority(site.priority).ttl(60*1000).save(callback);
+  }
+}
 
 function enqueueSites(callback) {
   console.log('Enqueuing sites');
@@ -49,37 +57,19 @@ function enqueueSites(callback) {
     .then(function(rows) {
       console.log('Found', rows.length, 'sites');
       async.eachSeries(rows, function(row, callback) {
-        queue.create('website', {
+        addSite({
+          title: row.domain,
           id: row.id,
           domain: row.domain,
-          rank: row.rank
-        }).attempts(5).backoff({ delay: 60*1000, type: 'fixed' }).save(callback);
+          rank: row.rank,
+          priority: 0
+        }, callback);
       }, callback);
     });
 }
 
-function shutdownCrawlers(callback) {
-  console.log('Shutting Down Crawlers');
-  async.each(crawlers, function(crawler) {
-    api.dropletsDelete(crawler, callback);
-  }, callback);
-}
-
 function startCrawlers(callback) {
-  console.log('Starting crawlers');
-  async.timesSeries(NUM_CRAWLERS, function(i, next) {
-    api.dropletsCreate({
-      name: 'crawler-' + i,
-      region: 'sfo1',
-      size: '64GB',
-      image: IMAGE_ID,
-      private_networking: true,
-      ssh_keys: [SSH_KEY]
-    }, function(err, response) {
-      console.log('DO', err, response.body);
-      next(null);
-    });
-  }, callback);
+  doLauncher(NUM_CRAWLERS, 0, callback);
 }
 
 function waitForCrawlers(callback) {
