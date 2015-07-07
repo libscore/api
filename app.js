@@ -14,6 +14,21 @@ app.use(cors());
 app.use(logger());
 
 
+app.use(function *(next) {
+  try {
+    yield next;
+  } catch (err) {
+    this.app.emit('error', err, this);
+    this.status = err.status || 500;
+    this.body = 'Internal server error';
+    if (err.message === 'Pool is destroyed') {
+      process.nextTick(function() {
+        process.exit(1);
+      })
+    }
+  }
+})
+
 app.use(route.get('/v1/:type', v1.libraries.index));
 app.use(route.get('/v1/:type/:name', v1.libraries.show));
 app.use(route.get('/v1/sites', v1.sites.index));
