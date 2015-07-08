@@ -11,9 +11,10 @@ queue.on('job failed', function(id, result) {
     if (err || !job) return;
     job.data.priority += 1;
     if (job.data.priority < 3) {
-      var job = queue.create('website', job.data).priority(job.data.priority).ttl(60*1000);
+      var newJob = queue.create('website', job.data).priority(job.data.priority).ttl(60*1000);
       process.nextTick(function() {
-        job.save();
+        job.remove();
+        newJob.save();
       });
     }
   });
