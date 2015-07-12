@@ -17,7 +17,7 @@ var queue = kue.createQueue({
 });
 
 
-async.parallel([
+async.series([
   enqueueSites,
   startCrawlers,
   waitForCrawlers
@@ -37,14 +37,14 @@ function enqueueSites(callback) {
     .orderBy('rank', 'asc')
     .then(function(rows) {
       console.log('Found', rows.length, 'sites');
-      async.eachSeries(rows, function(row, callback) {
+      async.eachLimit(rows, 10, function(row, callback) {
         queue.create('website', {
           title: row.domain,
           id: row.id,
           domain: row.domain,
           rank: row.rank,
           priority: 0
-        }).priority(0).ttl(60*1000).save(callback);
+        }).priority(0).ttl(90*1000).save(callback);
       }, callback);
     });
 }
