@@ -8,7 +8,7 @@ var Progress = require('progress');
 
 var CREATED_AT = new Date();  // Hold creation time constant
 
-knex('libraries').select('id').whereNotNull('rank').then(function(rows) {
+knex('libraries').select('id').then(function(rows) {
   var bar = new Progress('Calculating [:bar] :percent :etas ', {
     incomplete: ' ',
     total: rows.length,
@@ -28,7 +28,5 @@ knex('libraries').select('id').whereNotNull('rank').then(function(rows) {
       console.error('Error inserting:', row, err);
       callback(null);
     });
-  }, function(err) {
-    knex.destroy();
   });
 });
