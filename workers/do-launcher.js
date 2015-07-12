@@ -20,7 +20,7 @@ module.exports = function(num, start, callback) {
       ssh_keys: [SSH_KEY]
     }, function(err, response) {
       console.log('DO', err, response.body);
-      next(null);
+      setTimeout(next, 5000);
     });
   }, function(err) {
     if (callback != null) {
