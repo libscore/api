@@ -50,7 +50,7 @@ function *index(type, next) {
 
 function *search(query, next) {
   var libraries = yield knex('libraries')
-    .select('libraries.name', 'libraries.type', 'histories.count')
+    .select('libraries.name', 'libraries.identifier', 'libraries.type', 'histories.count')
     .join('histories', 'libraries.id', 'histories.library_id')
     .where('histories.created_at', 'in', knex('histories').max('created_at'))
     .andWhere('libraries.name', 'ILIKE', knex.raw('?', '%' + query + '%'))
@@ -58,7 +58,7 @@ function *search(query, next) {
     .limit(25);
   var results = libraries.map(function(library) {
     return {
-      name: library.name,
+      name: library.identifier,
       count: library.count,
       type: library.type
     };
