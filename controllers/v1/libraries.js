@@ -6,7 +6,7 @@ var moment = require('moment');
 function *badge(name, next) {
   var library = yield knex('libraries')
     .innerJoin('histories', 'libraries.id', 'histories.library_id')
-    .where({ name: name, type: 'library' })
+    .where({ identifier: name, type: 'library' })
     .orderBy('histories.created_at', 'desc').limit(1).first();
   this.status = 301;
   this.redirect('http://img.shields.io/badge/libscore-' + library.count + '-brightgreen.svg?style=flat-square');
@@ -75,7 +75,7 @@ function *show(type, name, next) {
     return yield next;
   }
   var resource = this.request.protocol + '://' + this.request.host + '/sites/';
-  var library = yield knex('libraries').where({ name: name, type: type }).first();
+  var library = yield knex('libraries').where({ identifier: name, type: type }).first();
   this.body = {
     github: "",
     meta: {}
