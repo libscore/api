@@ -9,7 +9,7 @@ var doLauncher = require('./do-launcher');
 
 
 var LIBSCORE_PATH = '/opt/libscore';
-var NUM_CRAWLERS = 10;
+var NUM_CRAWLERS = 25;
 
 
 var queue = kue.createQueue({
@@ -33,7 +33,6 @@ function enqueueSites(callback) {
   console.log('Enqueuing sites');
   knex('sites')
     .whereNotNull('rank')
-    .andWhere('updated_at', '<=', moment().subtract(24, 'hours'))
     .orderBy('rank', 'asc')
     .then(function(rows) {
       console.log('Found', rows.length, 'sites');

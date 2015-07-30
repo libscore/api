@@ -19,7 +19,7 @@ knex('libraries').select('id').then(function(rows) {
     var count = knex('libraries_sites')
       .count('*')
       .where({ library_id: row.id })
-      .andWhere('libraries_sites.updated_at', '>=', moment().subtract(3, 'months').toDate());
+      .andWhere('libraries_sites.updated_at', '>=', moment().subtract(14, 'days').toDate());
     knex('histories').insert({
       library_id: row.id,
       count: knex.raw('COALESCE((' + count + '), 0)'),
