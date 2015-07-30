@@ -13,11 +13,6 @@ var updatedAt = new Date();
 var libraries = {};
 
 
-fs.readFile('libs.json', function(err, data) {
-  libraries = JSON.parse(data);
-  ingest();
-})
-
 // console.log('Counting libraries');
 lineReader.eachLine('dump.json', function(line, last, callback) {
   countLibraries(line);
@@ -30,17 +25,18 @@ lineReader.eachLine('dump.json', function(line, last, callback) {
       return memo;
     }, {});
     console.log('Filtered to ' + Object.keys(libraries).length);
-    fs.appendFile('libs.json', JSON.stringify(libraries), function() {
-      process.exit(0);
-    });
-    // ingest();
+    ingest();
   } else {
     callback();
   }
 });
 
 function countLibraries(line) {
-  var result = JSON.parse(line);
+  try {
+    var result = JSON.parse(line);
+  } catch (ignored) {
+    return;
+  }
   var combined = result.data.libs.desktop.concat(result.data.scripts.desktop, result.data.libs.mobile, result.data.scripts.mobile);
   combined.forEach(function(library) {
     if (!libraries[library]) libraries[library] = 0;
@@ -63,31 +59,33 @@ function ingest() {
         arr.push({ type: type, platform: platform, identifier: identifier });
       }
     };
-    var result = JSON.parse(line);
     bar.tick();
+    try {
+      var result = JSON.parse(line);
+    } catch (ignored) {
+      return callback(null);
+    }
     result.data.libs.desktop.forEach(add.bind(add, 'library', 'desktop'));
     result.data.libs.mobile.forEach(add.bind(add, 'library', 'mobile'));
     result.data.scripts.desktop.forEach(add.bind(add, 'script', 'desktop'));
     result.data.scripts.mobile.forEach(add.bind(add, 'script', 'mobile'));
-    knex('sites').update({ updated_at: updatedAt }).where('id', '=', result.id).finally(function() {
-      Promise.all(arr.map(function(library) {
-        return knex('libraries').select('id').where({ type: library.type, identifier: library.identifier }).then(function(rows) {
-          if (rows.length > 0) {
-            return Promise.resolve([rows[0].id]);
-          } else {
-            return knex('libraries').insert({ type: library.type, identifier: library.identifier, name: library.identifier }).returning('id');
-          }
-        }).then(function(rows) {
-          library.id = rows[0];
-          return knex('libraries_sites').where({ library_id: library.id, site_id: result.id, platform: library.platform });
-        }).then(function(rows) {
-          if (rows.length > 0) {
-            return knex('libraries_sites').where({ library_id: library.id, site_id: result.id, platform: library.platform }).update({ updated_at: updatedAt });
-          } else {
-            return knex('libraries_sites').insert({ library_id: library.id, site_id: result.id, platform: library.platform, updated_at: updatedAt });
-          }
-        });
-      })).finally(callback);
-    });
+    Promise.all(arr.map(function(library) {
+      return knex('libraries').select('id').where({ type: library.type, identifier: library.identifier }).then(function(rows) {
+        if (rows.length > 0) {
+          return Promise.resolve([rows[0].id]);
+        } else {
+          return knex('libraries').insert({ type: library.type, identifier: library.identifier, name: library.identifier }).returning('id');
+        }
+      }).then(function(rows) {
+        library.id = rows[0];
+        return knex('libraries_sites').where({ library_id: library.id, site_id: result.id, platform: library.platform });
+      }).then(function(rows) {
+        if (rows.length > 0) {
+          return knex('libraries_sites').where({ library_id: library.id, site_id: result.id, platform: library.platform }).update({ updated_at: updatedAt });
+        } else {
+          return knex('libraries_sites').insert({ library_id: library.id, site_id: result.id, platform: library.platform, updated_at: updatedAt });
+        }
+      });
+    })).finally(callback);
   });
 }

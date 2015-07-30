@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "async": "^1.2.1",
+    "bluebird": "^2.9.34",
     "co-body": "^2.0.0",
     "concat-files": "^0.1.0",
     "csv-parse": "^0.1.3",
