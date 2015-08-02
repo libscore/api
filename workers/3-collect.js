@@ -1,5 +1,3 @@
-// TODO add public key to crawler-template
-
 var _ = require('lodash');
 var async = require('async');
 var concat = require('concat-files');
@@ -34,12 +32,12 @@ api.dropletsGetAll({}, function(err, response) {
 function collect(droplets) {
   droplets = _.clone(droplets);
   async.eachSeries(droplets, function(droplet, callback) {
-    if (!/^crawler-\d+$/.test(droplet.name)) return callback(null);
+    if (!/^crawler-\d+$/.test(droplet.name) || droplet.status !== 'active') return callback(null);
     var ip = droplet.networks.v4[1].ip_address;
     console.log('Downloading dump from', droplet.name, ip);
     download(ip, droplet.name, function() {
       allDroplets.splice(allDroplets.indexOf(droplet), 1);
-      api.dropletsDelete(droplet.id, callback);
+      api.dropletsRequestAction(droplet.id, { type: 'power_off' }, callback);
     });
   }, function() {
     console.log('Combining files');
