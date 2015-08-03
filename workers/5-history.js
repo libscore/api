@@ -8,6 +8,7 @@ var Progress = require('progress');
 
 var CREATED_AT = new Date();  // Hold creation time constant
 
+
 knex('libraries').select('id').then(function(rows) {
   var bar = new Progress('Calculating [:bar] :percent :etas ', {
     incomplete: ' ',
@@ -16,10 +17,11 @@ knex('libraries').select('id').then(function(rows) {
   });
   async.eachLimit(rows, os.cpus().length, function(row, callback) {
     bar.tick();
-    var count = knex('libraries_sites')
-      .count('*')
+    var distinct = knex('libraries_sites')
+      .distinct('site_id')
       .where({ library_id: row.id })
       .andWhere('libraries_sites.updated_at', '>=', moment().subtract(14, 'days').toDate());
+    var count = knex(knex.raw('(' + distinct + ') as temp')).count('site_id');
     knex('histories').insert({
       library_id: row.id,
       count: knex.raw('COALESCE((' + count + '), 0)'),

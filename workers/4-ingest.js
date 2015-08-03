@@ -8,6 +8,7 @@ var Promise = require('bluebird');
 var Progress = require('progress');
 
 var LIBRARY_LIMIT = 20;
+var CHUNK_SIZE = 500;
 var updatedAt = new Date();
 
 // Find all libs that have at least 20
@@ -22,6 +23,8 @@ var data = {
     desktop: {}
   }
 };
+var errorCount = 0;
+
 
 console.log('Counting libraries');
 lineReader.eachLine('dump.json', function(line, last, callback) {
@@ -63,6 +66,7 @@ lineReader.eachLine('dump.json', function(line, last, callback) {
       return ingest(ids.script, data.script.mobile, 'mobile', 'script');
     });
   }).then(function() {
+    console.log(errorCount, 'errors');
     process.exit(0);
   });
 });
@@ -71,6 +75,7 @@ function countLibraries(line) {
   try {
     var result = JSON.parse(line);
   } catch (ignored) {
+    errorCount += 1;
     return;
   }
   ['libs', 'scripts'].forEach(function(type) {
@@ -108,7 +113,7 @@ function gatherIds() {
 }
 
 function insertChunked(table, inserts) {
-  var chunks = _.chunk(inserts, 500);
+  var chunks = _.chunk(inserts, CHUNK_SIZE);
   return new Promise(function(resolve, reject) {
     async.eachLimit(chunks, 10, function(chunk, callback) {
       knex(table).insert(chunk).then(callback.bind(callback, null));
@@ -137,7 +142,7 @@ function ingest(ids, libraries, platform, type) {
     async.eachSeries(_.shuffle(Object.keys(libraries)), function(library, done) {
       bar.tick();
       var sites = libraries[library];
-      var selectChunks = _.chunk(sites);
+      var selectChunks = _.chunk(sites, CHUNK_SIZE);
       async.mapSeries(selectChunks, function(chunk, callback) {
         knex('libraries_sites')
           .select('site_id')
@@ -157,7 +162,7 @@ function ingest(ids, libraries, platform, type) {
         var inserts = newIds.map(function(id) {
           return { library_id: ids[library], site_id: id, platform: platform };
         });
-        var chunks = _.chunk(Object.keys(existingIds), 500);
+        var chunks = _.chunk(Object.keys(existingIds), CHUNK_SIZE);
         async.eachLimit(chunks, 10, function(chunk, callback) {
           knex('libraries_sites')
             .whereIn('site_id', chunk)

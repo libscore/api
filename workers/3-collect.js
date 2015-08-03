@@ -13,31 +13,39 @@ fs.exists('dumps', function(exists) {
   fs.mkdirSync('dumps');
 });
 
-var allDroplets = [];
-
 process.on('uncaughtException', function(err) {
   // Crawler may have restarted
-  console.error('uncaughtException', err)
-  setTimeout(function() {
-    collect(allDroplets);
-  }, 5000);
+  console.error('uncaughtException', err);
 });
 
 api.dropletsGetAll({}, function(err, response) {
-  allDroplets = response.body.droplets;
-  collect(allDroplets);
+  var droplets = response.body.droplets;
+  if (response.body.links && response.body.links.pages) {
+    api.dropletsGetAll({ page: 2 }, function(err, response) {
+      droplets = droplets.concat(response.body.droplets);
+      collect(droplets);
+    });
+  } else {
+    collect(droplets);
+  }
 });
 
 
 function collect(droplets) {
-  droplets = _.clone(droplets);
-  async.eachSeries(droplets, function(droplet, callback) {
-    if (!/^crawler-\d+$/.test(droplet.name) || droplet.status !== 'active') return callback(null);
-    var ip = droplet.networks.v4[1].ip_address;
-    console.log('Downloading dump from', droplet.name, ip);
-    download(ip, droplet.name, function() {
-      allDroplets.splice(allDroplets.indexOf(droplet), 1);
-      api.dropletsRequestAction(droplet.id, { type: 'power_off' }, callback);
+  async.whilst(function() {
+    return droplets.length > 0;
+  }, function(callback) {
+    var droplet = droplets.shift();
+    if (!/^crawler-\d+$/.test(droplet.name) || droplet.status !== 'active') {
+      return callback(null);
+    }
+    download(droplet.networks.v4[1].ip_address, droplet.name, function(err) {
+      if (err) {
+        droplets.unshift(droplet);
+        callback(null);
+      } else {
+        api.dropletsRequestAction(droplet.id, { type: 'power_off' }, callback);
+      }
     });
   }, function() {
     console.log('Combining files');
@@ -49,19 +57,15 @@ function collect(droplets) {
   });
 }
 
-
 function download(ip, name, callback) {
+  console.log('Downloading dump from', name, ip);
   scp.scp({
     host: ip,
     username: 'root',
     privateKey: fs.readFileSync('/Users/jason/.ssh/id_rsa'),
     path: '/opt/libscore/crawler/dump.json'
   }, './dumps/' + name + '.json', function(err) {
-    if (err) {
-      console.error('Download error', err);
-      throw err;  // This horseshit lib calls callback twice
-    } else {
-      callback(null);
-    }
+    callback(err);
+    callback = function() {};  // This horseshit lib calls callback twice
   });
 }
