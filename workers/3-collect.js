@@ -6,7 +6,7 @@ var glob = require('glob');
 var scp = require('scp2');
 var DigitalOcean = require('do-wrapper');
 
-var api = new DigitalOcean(process.env.LIBSCORE_DO_API || 'b08ea7e1c2983f66751125a816c5cf1b27cbacffefdee6d0f32a3b584c246dcf');
+var api = new DigitalOcean(process.env.LIBSCORE_DO_API);
 
 fs.exists('dumps', function(exists) {
   if (exists) return;
