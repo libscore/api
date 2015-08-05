@@ -21,7 +21,7 @@ function *index(type, next) {
   } else {
     return yield next;
   }
-  var libraries = yield knex.select('libraries.name', 'histories.count').from(
+  var libraries = yield knex.select('libraries.identifier', 'histories.count').from(
     knex.raw(
       "(" +
       knex('histories')
@@ -38,10 +38,10 @@ function *index(type, next) {
     results: libraries.map(function(library) {
       var result = {
         count: [library.count],
-        resource: resource + library.name,
+        resource: resource + library.identifier,
         github: ""
       };
-      result[type] = library.name
+      result[type] = library.identifier
       return result;
     }),
     meta: {}
