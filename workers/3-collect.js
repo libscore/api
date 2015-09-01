@@ -62,7 +62,7 @@ function download(ip, name, callback) {
   scp.scp({
     host: ip,
     username: 'root',
-    privateKey: fs.readFileSync('/Users/jason/.ssh/id_rsa'),
+    privateKey: fs.readFileSync('/home/api/.ssh/id_rsa'),
     path: '/opt/libscore/crawler/dump.json'
   }, './dumps/' + name + '.json', function(err) {
     callback(err);
