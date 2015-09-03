@@ -82,10 +82,12 @@ function *show(type, name, next) {
   }
   if (library) {
     var sites = yield knex('sites')
+      .select(knex.raw('distinct on (rank) rank'), 'sites.domain', 'libraries_sites.platform')
       .innerJoin('libraries_sites', 'sites.id', 'libraries_sites.site_id')
       .where('libraries_sites.library_id', '=', library.id)
       .andWhere('libraries_sites.updated_at', '>=', moment().subtract(3, 'months').toDate())
       .orderBy('rank', 'asc')
+      .orderBy('platform', 'asc')
       .limit(1000);
     var histories = yield knex('histories')
       .where('library_id', '=', library.id)
@@ -96,6 +98,7 @@ function *show(type, name, next) {
       return {
         url: site.domain,
         rank: site.rank,
+        platform: site.platform,
         resource: resource + site.domain
       }
     });
