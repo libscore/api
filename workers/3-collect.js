@@ -41,7 +41,8 @@ function collect(droplets) {
     }
     download(droplet.networks.v4[1].ip_address, droplet.name, function(err) {
       if (err) {
-        droplets.unshift(droplet);
+        console.error('Download error', err.message);
+        droplets.push(droplet);
         callback(null);
       } else {
         api.dropletsRequestAction(droplet.id, { type: 'power_off' }, callback);
