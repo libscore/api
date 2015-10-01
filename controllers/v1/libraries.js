@@ -13,7 +13,7 @@ function *badge(name, next) {
 };
 
 function *index(type, next) {
-  var resource = this.request.protocol + '://' + this.request.host + '/' + type + '/';
+  var resource = this.request.protocol + '://' + this.request.host + '/v1/' + type + '/';
   if (type === 'libraries') {
     type = 'library';
   } else if (type === 'scripts') {
@@ -74,7 +74,7 @@ function *show(type, name, next) {
   } else {
     return yield next;
   }
-  var resource = this.request.protocol + '://' + this.request.host + '/sites/';
+  var resource = this.request.protocol + '://' + this.request.host + '/v1/sites/';
   var library = yield knex('libraries').where({ identifier: name, type: type }).first();
   this.body = {
     github: "",
