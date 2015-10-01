@@ -9,7 +9,7 @@ var doLauncher = require('./do-launcher');
 
 
 var LIBSCORE_PATH = '/opt/libscore';
-var NUM_CRAWLERS = 25;
+var NUM_CRAWLERS = 32;
 
 
 var queue = kue.createQueue({
