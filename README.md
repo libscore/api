@@ -44,3 +44,26 @@ Web
 1. `git pull origin master`
 1. Log into Cloudflare
 1. Invalidate cache for front end assets
+
+
+### Crawling
+
+1. Update Alexa
+  - `su api` on libscore-prod
+  - `cd /opt/libscore/api`
+  - `node workers/1-alexa.js` (90 min)
+1. Crawl Sites
+  - `nohup node workers/2-crawl.js &` (8 hrs)
+  - `nohup node workers/kue.js &` (background)
+1. Collect & Ingest Dumps
+  - `node workers/3-collect.js` (3 min)
+  - `nohup node --max-old-space-size=16384 workers/4-ingest.js &` (6 hrs)
+1. Calculate History
+  - `node workers/5-history.js` ()
+1. Cleanup
+  - `mv dump.json /opt/backups/YYYY-MM-libscore.json`
+  - `node workers/6-destroy.js`
+1. Back Up DB
+  - `su postgres` on libscore-prod
+  - `cd /opt/backups`
+  - `pg_dump -Fc libscore --data-only > YYYY-MM-libscore.dump` (3 min)
