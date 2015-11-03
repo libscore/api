@@ -63,6 +63,7 @@ Web
 1. Cleanup
   - `mv dump.json /opt/backups/YYYY-MM-libscore.json`
   - `node workers/6-destroy.js`
+  - `service redis-server restart`
 1. Back Up DB
   - `su postgres` on libscore-prod
   - `cd /opt/backups`

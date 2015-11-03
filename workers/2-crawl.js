@@ -77,7 +77,7 @@ function waitForCrawlers(callback) {
     // inactive == queued
     async.every(['inactive', 'active', 'delayed'], function(name, callback) {
       queue[name+'Count'](function(err, count) {
-        callback(count === 0);
+        callback(count <= 25);
       });
     }, function(every) {
       done = every;
