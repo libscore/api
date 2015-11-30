@@ -30,5 +30,7 @@ knex('libraries').select('id').then(function(rows) {
       console.error('Error inserting:', row, err);
       callback(null);
     });
+  }, function() {
+    process.exit(0);
   });
 });
