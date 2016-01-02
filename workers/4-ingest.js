@@ -5,7 +5,6 @@ var request = require('request');
 var knex = require('../db/knex');
 var fs = require('fs');
 var Promise = require('bluebird');
-var Progress = require('progress');
 
 var LIBRARY_LIMIT = 20;
 var CHUNK_SIZE = 500;
@@ -132,15 +131,21 @@ function insertLibraries(ids, libraries, type) {
 }
 
 function ingest(ids, libraries, platform, type) {
+  var total = Object.keys(libraries).length;
   var bar = new Progress('Ingest ' + platform + ' ' + type + ' [:bar] :percent :etas ', {
     incomplete: ' ',
-    total: Object.keys(libraries).length,
+    total: total,
     width: 40,
     renderThrottle: 5000
   });
+  function tick(function() {
+    total -= 1;
+    if (total % 100 === 0) console.log(total, 'remaining');
+    bar.tick();
+  });
   return new Promise(function(resolve, reject) {
     async.eachSeries(_.shuffle(Object.keys(libraries)), function(library, done) {
-      bar.tick();
+      tick();
       var sites = libraries[library];
       var selectChunks = _.chunk(sites, CHUNK_SIZE);
       async.mapSeries(selectChunks, function(chunk, callback) {
