@@ -13,11 +13,6 @@ fs.exists('dumps', function(exists) {
   fs.mkdirSync('dumps');
 });
 
-process.on('uncaughtException', function(err) {
-  // Crawler may have restarted
-  console.error('uncaughtException', err);
-});
-
 api.dropletsGetAll({}, function(err, response) {
   var droplets = response.body.droplets;
   if (response.body.links && response.body.links.pages) {
@@ -28,6 +23,11 @@ api.dropletsGetAll({}, function(err, response) {
   } else {
     collect(droplets);
   }
+
+  process.on('uncaughtException', function(err) {
+    console.error('uncaughtException', err, err.stack);
+    collect(droplets);
+  });
 });
 
 
@@ -35,16 +35,17 @@ function collect(droplets) {
   async.whilst(function() {
     return droplets.length > 0;
   }, function(callback) {
-    var droplet = droplets.shift();
+    var droplet = droplets[0];
     if (!/^crawler-\d+$/.test(droplet.name) || droplet.status !== 'active') {
+      droplets.shift();
       return callback(null);
     }
     download(droplet.networks.v4[1].ip_address, droplet.name, function(err) {
       if (err) {
         console.error('Download error', err.message);
-        droplets.push(droplet);
-        callback(null);
+        setTimeout(callback, 10000);     // Droplet probably restarting
       } else {
+        droplets.shift();
         api.dropletsRequestAction(droplet.id, { type: 'power_off' }, callback);
       }
     });

@@ -21,7 +21,7 @@ module.exports = function(num, start, callback) {
       private_networking: true,
       ssh_keys: [SSH_KEY]
     }, function(err, response) {
-      console.log('DO', err, response.body);
+      console.log('DO', err);
       setTimeout(next, 5000);
     });
   }, function(err) {
