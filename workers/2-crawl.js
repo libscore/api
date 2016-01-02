@@ -70,18 +70,15 @@ function startCrawlers(callback) {
 
 function waitForCrawlers(callback) {
   console.log('Waiting for crawlers');
-  var done = false;
-  async.until(function() {
-    return done;
-  }, function(callback) {
-    // inactive == queued
+  async.during(function(callback) {
     async.every(['inactive', 'active', 'delayed'], function(name, callback) {
       queue[name+'Count'](function(err, count) {
         callback(count <= 25);
       });
     }, function(every) {
-      done = every;
-      setTimeout(callback, 5000);
+      callback(null, every);
     });
+  }, function(callback) {
+    setTimeout(callback, 5000);   // TODO change to slower
   }, callback);
 }
