@@ -5,7 +5,7 @@ var parse = require('co-body');
 
 
 function *index(next) {
-  var resource = this.request.protocol + '://' + this.request.host + '/sites/';
+  var resource = this.request.protocol + '://' + this.request.host + '/v1/sites/';
   var sites = yield knex('sites').orderBy('rank').orderBy('rank', 'asc').limit(1000);
 
   var results = sites.map(function(site) {
