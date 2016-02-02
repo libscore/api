@@ -142,7 +142,7 @@ function ingest(ids, libraries, platform, type) {
     total -= 1;
     if (total % 100 === 0) console.log(total, 'remaining');
     bar.tick();
-  });
+  }
   return new Promise(function(resolve, reject) {
     async.eachSeries(_.shuffle(Object.keys(libraries)), function(library, done) {
       tick();
