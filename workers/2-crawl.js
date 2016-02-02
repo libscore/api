@@ -71,14 +71,15 @@ function startCrawlers(callback) {
 function waitForCrawlers(callback) {
   console.log('Waiting for crawlers');
   async.during(function(callback) {
-    async.every(['inactive', 'active', 'delayed'], function(name, callback) {
+    async.some(['inactive', 'active', 'delayed'], function(name, callback) {
       queue[name+'Count'](function(err, count) {
-        callback(count <= 25);
+        console.log(err, name, count);
+        callback(count > 25);
       });
-    }, function(every) {
-      callback(null, every);
+    }, function(some) {
+      callback(null, some);
     });
   }, function(callback) {
-    setTimeout(callback, 5000);   // TODO change to slower
+    setTimeout(callback, 60000);
   }, callback);
 }
