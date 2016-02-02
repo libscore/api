@@ -1,5 +1,6 @@
 // Download the Alexa top 1m sites and update the rankings
 
+var _ = require('lodash');
 var async = require('async');
 var http = require('http');
 var knex = require('../db/knex');
@@ -40,7 +41,26 @@ knex('sites').whereNotNull('rank').update({ rank: null }).then(function() {
 
 
 function drain() {
-  knex.destroy();
+  knex('sites').select('id').whereNull('rank').then(function(rows) {
+    return new Promise(function(resolve, reject) {
+      var chunks = _.chunk(_.pluck(rows, 'id'), 100);
+      bar = new Progress('Cleaning [:bar] :percent :etas ', {
+        incomplete: ' ',
+        total: chunks.length,
+        width: 40
+      });
+      async.eachLimit(chunks, 10, function(chunk, callback) {
+        knex('libraries_sites').whereIn('site_id', chunk).delete().then(function() {
+          callback(null);
+        });
+        bar.tick();
+      }, function() {
+        resolve();
+      });
+    });
+  }).then(function() {
+    knex.destroy();
+  });
 };
 
 function getList(response) {
@@ -58,15 +78,10 @@ function work(task, callback) {
     }
     callback(null);
   } else {
-    // Insert records
-    // TODO use upsert when Posgres 9.5 comes out
-    knex('sites').count('domain').where({ domain: task.domain }).then(function(rows) {
-      bar.tick();
-      if (rows.length > 0 && rows[0].count > 0) {
-        return knex('sites').where({ domain: task.domain }).update({ rank: task.rank });
-      } else {
-        return knex('sites').insert({ domain: task.domain, rank: task.rank });
-      }
-    }).finally(callback);
+    bar.tick();
+    knex.raw(
+      'INSERT INTO sites (domain, rank) VALUES(?, ?) ' +
+      'ON CONFLICT (domain) DO UPDATE SET rank = EXCLUDED.rank'
+    , [task.domain, task.rank]).then(callback);
   }
 }

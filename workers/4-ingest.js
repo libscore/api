@@ -51,7 +51,7 @@ lineReader.eachLine('dump.json', function(line, last, callback) {
     console.log('Inserting new libraries');
     return Promise.all(['library', 'script'].map(function(type) {
       var libraryNames = _.union(data[type].desktop, data[type].mobile);
-      return insertLibraries(ids[type], libraryNames, type);
+      return updateLibraries(ids[type], libraryNames, type);
     }));
   }).then(function() {
     console.log('Re-retrieving IDs');
@@ -111,25 +111,6 @@ function gatherIds() {
   });
 }
 
-function insertChunked(table, inserts) {
-  var chunks = _.chunk(inserts, CHUNK_SIZE);
-  return new Promise(function(resolve, reject) {
-    async.eachLimit(chunks, 10, function(chunk, callback) {
-      knex(table).insert(chunk).then(callback.bind(callback, null));
-    }, resolve);
-  });
-}
-
-function insertLibraries(ids, libraries, type) {
-  var inserts = [];
-  libraries.forEach(function(name) {
-    if (!ids[name]) {
-      insert.push({ identifier: name, name: identifier, type: type });
-    }
-  });
-  return insertChunked('libraries', inserts);
-}
-
 function ingest(ids, libraries, platform, type) {
   var total = Object.keys(libraries).length;
   function tick() {
@@ -139,40 +120,55 @@ function ingest(ids, libraries, platform, type) {
   return new Promise(function(resolve, reject) {
     async.eachSeries(_.shuffle(Object.keys(libraries)), function(library, done) {
       tick();
-      var sites = libraries[library];
-      var selectChunks = _.chunk(sites, CHUNK_SIZE);
-      async.mapSeries(selectChunks, function(chunk, callback) {
-        knex('libraries_sites')
-          .select('site_id')
-          .whereIn('site_id', chunk)
-          .andWhere('library_id', '=', ids[library])
-          .andWhere('platform', '=', platform)
-          .then(callback.bind(callback, null));
-      }, function(err, results) {
-        var rows = _.flatten(results);
-        var existingIds = _.pluck(rows, 'site_id').reduce(function(memo, id) {
-          memo[id] = true;
-          return memo;
-        }, {});
-        var newIds = sites.filter(function(id) {
-          return !existingIds[id];
-        });
-        var inserts = newIds.map(function(id) {
-          return { library_id: ids[library], site_id: id, platform: platform };
-        });
-        var chunks = _.chunk(Object.keys(existingIds), CHUNK_SIZE);
-        async.eachLimit(chunks, 10, function(chunk, callback) {
-          knex('libraries_sites')
-            .whereIn('site_id', chunk)
-            .andWhere('platform', '=', platform)
-            .andWhere('library_id', '=', ids[library])
-            .update({ updated_at: updatedAt }).then(callback.bind(callback, null));
-        }, function() {
-          insertChunked('libraries_sites', inserts).then(done.bind(done, null));
-        });
+      var queries = _.map(libraries[library], function(site) {
+        return knex.raw(
+          'INSERT INTO libraries_sites (site_id, platform, library_id, updated_at) VALUES (?,?,?,?) ' +
+          'ON CONFLICT ON CONSTRAINT libraries_sites_library_id_site_id_platform_unique ' +
+          'DO UPDATE SET updated_at = EXCLUDED.updated_at'
+        , [site, platform, ids[library], updatedAt]);
+      });
+      async.eachSeries(_.chunk(queries, CHUNK_SIZE), function(chunk, callback) {
+        var query = _.map(chunk, function(piece) {
+          return piece.toString();
+        }).join(';\n');
+        knex.raw(query).then(callback);
+      }, function() {
+        done();
       });
     }, function() {
       resolve();
     });
+  });
+}
+
+function deleteLibraries(ids) {
+  return new Promise(function(resolve, reject) {
+    async.eachLimit(ids, 10, function(id, callback) {
+      knex('libraries_sites').where('library_id', id).delete().then(callback.bind(callback, null));
+    }, resolve.bind(resolve, null));
+  });
+}
+
+function insertChunked(rows) {
+  var chunks = _.chunk(rows, CHUNK_SIZE);
+  return new Promise(function(resolve, reject) {
+    async.eachLimit(chunks, 10, function(chunk, callback) {
+      knex('libraries').insert(chunk).then(callback.bind(callback, null));
+    }, resolve.bind(resolve, null));
+  });
+}
+
+function updateLibraries(ids, libraries, type) {
+  ids = _.clone(ids);
+  var inserts = [];
+  libraries.forEach(function(name) {
+    if (!ids[name]) {
+      inserts.push({ identifier: name, name: identifier, type: type });
+    } else {
+      delete ids[name];
+    }
+  });
+  return insertChunked(inserts).then(function() {
+    return deleteLibraries(_.values(ids));
   });
 }
