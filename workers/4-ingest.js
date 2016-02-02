@@ -132,16 +132,9 @@ function insertLibraries(ids, libraries, type) {
 
 function ingest(ids, libraries, platform, type) {
   var total = Object.keys(libraries).length;
-  var bar = new Progress('Ingest ' + platform + ' ' + type + ' [:bar] :percent :etas ', {
-    incomplete: ' ',
-    total: total,
-    width: 40,
-    renderThrottle: 5000
-  });
   function tick() {
     total -= 1;
     if (total % 100 === 0) console.log(total, 'remaining');
-    bar.tick();
   }
   return new Promise(function(resolve, reject) {
     async.eachSeries(_.shuffle(Object.keys(libraries)), function(library, done) {
