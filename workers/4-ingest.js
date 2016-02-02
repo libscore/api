@@ -134,7 +134,7 @@ function ingest(ids, libraries, platform, type) {
   var total = Object.keys(libraries).length;
   function tick() {
     total -= 1;
-    if (total % 100 === 0) console.log(total, 'remaining');
+    if (total % 100 === 0) console.log(total, platform, type, 'remaining');
   }
   return new Promise(function(resolve, reject) {
     async.eachSeries(_.shuffle(Object.keys(libraries)), function(library, done) {
