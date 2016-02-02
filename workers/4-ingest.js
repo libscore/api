@@ -138,7 +138,7 @@ function ingest(ids, libraries, platform, type) {
     width: 40,
     renderThrottle: 5000
   });
-  function tick(function() {
+  function tick() {
     total -= 1;
     if (total % 100 === 0) console.log(total, 'remaining');
     bar.tick();
