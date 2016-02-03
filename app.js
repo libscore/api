@@ -15,6 +15,7 @@ app.use(logger());
 
 
 app.use(function *(next) {
+  this.set('Cache-Control', 'public');
   try {
     yield next;
   } catch (err) {
@@ -27,7 +28,7 @@ app.use(function *(next) {
       })
     }
   }
-})
+});
 
 app.use(route.get('/v1/:type', v1.libraries.index));
 app.use(route.get('/v1/:type/:name', v1.libraries.show));

@@ -61,6 +61,7 @@ Web
   - `node workers/5-history.js` (5 min)
 1. Cleanup
   - `mv dump.json /opt/backups/YYYY-MM-libscore.json`
+  - `rm -f dumps`
   - `node workers/6-destroy.js`
   - `service redis-server restart`
 1. Back Up DB
