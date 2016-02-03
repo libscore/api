@@ -48,9 +48,8 @@ lineReader.eachLine('dump.json', function(line, last, callback) {
   console.log('Filtered to', Object.keys(data.script.mobile).length + Object.keys(data.script.desktop).length, 'scripts');
 
   gatherIds().then(function(ids) {
-    console.log('Inserting new libraries');
     return Promise.all(['library', 'script'].map(function(type) {
-      var libraryNames = _.union(data[type].desktop, data[type].mobile);
+      var libraryNames = _.union(Object.keys(data[type].desktop), Object.keys(data[type].mobile));
       return updateLibraries(ids[type], libraryNames, type);
     }));
   }).then(function() {
@@ -163,12 +162,15 @@ function updateLibraries(ids, libraries, type) {
   var inserts = [];
   libraries.forEach(function(name) {
     if (!ids[name]) {
-      inserts.push({ identifier: name, name: identifier, type: type });
+      inserts.push({ identifier: name, name: name, type: type });
     } else {
       delete ids[name];
     }
   });
+  console.log('Inserting', inserts.length, type);
   return insertChunked(inserts).then(function() {
-    return deleteLibraries(_.values(ids));
+    var deletes = _.values(ids);
+    console.log('Deleting', deletes.length, type);
+    return deleteLibraries(deletes);
   });
 }
