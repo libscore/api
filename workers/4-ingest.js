@@ -4,10 +4,12 @@ var lineReader = require('line-reader');
 var request = require('request');
 var knex = require('../db/knex');
 var fs = require('fs');
+var os = require('os');
 var Promise = require('bluebird');
 
 var LIBRARY_LIMIT = 20;
-var CHUNK_SIZE = 500;
+var CHUNK_SIZE = 5000;
+var CONCURRENCY = os.cpus().length;
 var updatedAt = new Date();
 
 // Find all libs that have at least 20
@@ -117,7 +119,7 @@ function ingest(ids, libraries, platform, type) {
     if (total % 100 === 0) console.log(total, platform, type, 'remaining');
   }
   return new Promise(function(resolve, reject) {
-    async.eachSeries(_.shuffle(Object.keys(libraries)), function(library, done) {
+    async.eachLimit(_.shuffle(Object.keys(libraries)), CONCURRENCY, function(library, done) {
       tick();
       var queries = _.map(libraries[library], function(site) {
         return knex.raw(
@@ -130,19 +132,15 @@ function ingest(ids, libraries, platform, type) {
         var query = _.map(chunk, function(piece) {
           return piece.toString();
         }).join(';\n');
-        knex.raw(query).then(callback);
-      }, function() {
-        done();
-      });
-    }, function() {
-      resolve();
-    });
+        knex.raw(query).then(callback.bind(callback, null));
+      }, done.bind(done, null));
+    }, resolve.bind(resolve, null));
   });
 }
 
 function deleteLibraries(ids) {
   return new Promise(function(resolve, reject) {
-    async.eachLimit(ids, 10, function(id, callback) {
+    async.eachLimit(ids, CONCURRENCY, function(id, callback) {
       knex('libraries_sites').where('library_id', id).delete().then(callback.bind(callback, null));
     }, resolve.bind(resolve, null));
   });
@@ -151,7 +149,7 @@ function deleteLibraries(ids) {
 function insertChunked(rows) {
   var chunks = _.chunk(rows, CHUNK_SIZE);
   return new Promise(function(resolve, reject) {
-    async.eachLimit(chunks, 10, function(chunk, callback) {
+    async.eachLimit(chunks, CONCURRENCY, function(chunk, callback) {
       knex('libraries').insert(chunk).then(callback.bind(callback, null));
     }, resolve.bind(resolve, null));
   });

@@ -49,7 +49,7 @@ function drain() {
         total: chunks.length,
         width: 40
       });
-      async.eachLimit(chunks, 10, function(chunk, callback) {
+      async.eachLimit(chunks, os.cpus().length, function(chunk, callback) {
         knex('libraries_sites').whereIn('site_id', chunk).delete().then(function() {
           callback(null);
         });

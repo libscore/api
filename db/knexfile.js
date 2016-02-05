@@ -13,7 +13,7 @@ var config = {
   },
   pool: {
     min: 0,
-    max: 2
+    max: 20
   }
 };
 
