@@ -2,6 +2,7 @@
 
 var koa = require('koa');
 var cors = require('koa-cors');
+var knex = require('./db/knex');
 var logger = require('koa-logger');
 var route = require('koa-route');
 var v1 = {
@@ -13,9 +14,15 @@ var app = koa();
 app.use(cors());
 app.use(logger());
 
+var lastHistory;
 
 app.use(function *(next) {
-  this.set('Cache-Control', 'public');
+  var twoWeeks = 60*60*24*14;
+  if (lastHistory == null) {
+    lastHistory = yield knex('histories').orderBy('created_at', 'desc').limit(1).first();
+  }
+  this.set('Cache-Control', 'public,max-age=' + twoWeeks + ',s-maxage=' + twoWeeks);
+  this.lastModified = new Date(lastHistory.created_at);
   try {
     yield next;
   } catch (err) {
